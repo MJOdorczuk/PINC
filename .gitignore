@@ -16,6 +16,7 @@ ut
 tags
 **.vtk
 local.mk
+local/**
 **.jpg
 **.mp4
 **.pyc
