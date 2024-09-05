@@ -811,11 +811,13 @@ void nePurgeGhost(NeutralPopulation *pop, const Grid *grid)
 		{
 			for (int d = 0; d < nDims; d++)
 			{
-				if ((pos[i * nDims + d] > size[d + 1] - nGhostLayers[d + 1] - 1 && (bnd[d + rank + 1] == DIRICHLET || bnd[d + rank + 1] == NEUMANN)))
+				if ((pos[i * nDims + d] > size[d + 1] - nGhostLayers[d + 1] - 1
+				 && (bnd[d + rank + 1] == DIRICHLET || bnd[d + rank + 1] == NEUMANN)))
 				{
 					cut = true;
 				}
-				if ((pos[i * nDims + d] < nGhostLayers[d + rank + 1] && (bnd[d + 1] == DIRICHLET || bnd[d + 1] == NEUMANN)))
+				if ((pos[i * nDims + d] < nGhostLayers[d + rank + 1]
+				 && (bnd[d + 1] == DIRICHLET || bnd[d + 1] == NEUMANN)))
 				{
 					cut = true;
 				}
@@ -1299,7 +1301,8 @@ void divFinDiff1st(Grid *result, Grid *field, Grid *rho)
 			}
 			if (fNext > fieldSizeProd[rank])
 			{
-				msg(ERROR, "index out of bounds in divFinDiff1st, index: %li max: %li, scalar index: %li", fNext, fieldSizeProd[rank], s);
+				msg(ERROR, "index out of bounds in divFinDiff1st, index: %li max: %li, scalar index: %li",
+					fNext, fieldSizeProd[rank], s);
 			}
 		}
 	}
@@ -1331,27 +1334,16 @@ void neExtractEmigrants3DOpen(NeutralPopulation *pop, MpiInfo *mpiInfo)
 	int *trueSize = mpiInfo->trueSize;
 	int *nSubdomainsProd = mpiInfo->nSubdomainsProd;
 	int *nSubdomains = malloc(3 * sizeof(*nSubdomains));
-	// int *subdomain = mpiInfo->subdomain;
 	bndType *bnd = pop->bnd;
-	// int rank = mpiInfo->mpiRank;
 
-	// printf("mpirank = %i, bnd[1] = %d,bnd[2] = %d,bnd[3] = %d, bnd[5] = %d,bnd[6] = %d,bnd[7] = %d \n",rank,bnd[1],bnd[2],bnd[3],bnd[5],bnd[6],bnd[7]);
 	double dummyPos[3];
 
 	int *offset = mpiInfo->offset;
-	// int nDims = pop->nDims;
 
 	nSubdomains[0] = nSubdomainsProd[1];
 	nSubdomains[1] = nSubdomainsProd[2] / nSubdomainsProd[1];
 	nSubdomains[2] = (nSubdomainsProd[3] / nSubdomainsProd[2]);
 
-	// msg(STATUS, "sssss %i, %i, %i", nSubdomains[0], nSubdomains[1], nSubdomains[2]);
-	// exit(0);
-
-	// msg(STATUS,"neighbours = %i",mpiInfo->nNeighbors);
-
-	// By using the dummy to hold data we won't lose track of the beginning of
-	// the arrays when incrementing the pointer
 	double **emigrants = mpiInfo->emigrantsDummy;
 	for (int ne = 0; ne < nNeighbors; ne++)
 	{
@@ -1366,11 +1358,9 @@ void neExtractEmigrants3DOpen(NeutralPopulation *pop, MpiInfo *mpiInfo)
 	double uy = thresholds[4];
 	double uz = thresholds[5];
 
-	// adPrint(thresholds,6);
 
 	for (int s = 0; s < nSpecies; s++)
 	{
-
 		long int pStart = pop->iStart[s] * 3;
 		long int pStop = pop->iStop[s] * 3;
 		long int removedupp = 0; // debug
@@ -1381,39 +1371,13 @@ void neExtractEmigrants3DOpen(NeutralPopulation *pop, MpiInfo *mpiInfo)
 
 			for (int d = 0; d < 3; d++)
 			{
-				// Why is offset size -1 ? ... -1 ?
-				// printf("%i \n",offset[d]);
 				dummyPos[d] = pop->pos[p + d] + offset[d];
-				// if(pop->pos[p+d]<1) printf("\n \n pop->pos[p+d] = %f \n \n ",pop->pos[p+d]);
 			}
 
-			// not offset but GLOBAL Size!
-			// MpiInfo->subdomain;				///< MPI node (nDims elements)
-			// MpiInfo->nSubdomains;
-
-			if ((dummyPos[0] > trueSize[0] * (nSubdomains[0]) && bnd[5] != PERIODIC) || (dummyPos[1] > trueSize[1] * (nSubdomains[1]) && bnd[6] != PERIODIC) || (dummyPos[2] > trueSize[2] * (nSubdomains[2]) && bnd[7] != PERIODIC))
+			if ((dummyPos[0] > trueSize[0] * (nSubdomains[0]) && bnd[5] != PERIODIC) ||
+				(dummyPos[1] > trueSize[1] * (nSubdomains[1]) && bnd[6] != PERIODIC) ||
+				(dummyPos[2] > trueSize[2] * (nSubdomains[2]) && bnd[7] != PERIODIC))
 			{
-
-				// if (s==0){
-				// 	printf("removed upper \n");
-				// 	printf("trueSize[1]*(nSubdomains[0]) = %i \n",trueSize[0]*(nSubdomains[0]));
-				// 	printf("bnd[5] = %d,bnd[6] = %d,bnd[7] = %d \n",bnd[5],bnd[6],bnd[7]);
-				// 	printf("global: %f, %f, %f \n", dummyPos[0], dummyPos[1], dummyPos[2]);
-				// 	printf("local: %f, %f, %f \n", pop->pos[p+0], pop->pos[p+1],  pop->pos[p+2]);
-				// 	printf("ofsett: %i, %i, %i \n \n", offset[0], offset[1], offset[2]);
-				// }
-				// printf("too large \n");
-				// msg(STATUS,"%i, %i, %i \n",trueSize[0],trueSize[1],trueSize[2]);
-				// printf("global: %f, %f, %f \n",dummyPos[0], dummyPos[1], dummyPos[2]);
-				// printf("Local: %f, %f, %f \n",pop->pos[p+0], pop->pos[p+1], pop->pos[p+2]);
-				// printf("Boundary %f, %f, %f \n \n",ux+trueSize[0]*(nSubdomains[0]-1),uy+trueSize[1]*(nSubdomains[1]-1),uz+trueSize[2]*(nSubdomains[2]-1) );
-				// msg(STATUS, " removing ");
-				//  Remove particle out of bounds particle
-
-				// msg(STATUS,"dummyPos[0] = %f, thresholds[0]+pos = %f",dummyPos[0],thresholds[0]+pop->pos[p*3*+d]);
-				// msg(STATUS,"dummyPos[1] = %f, thresholds[1]+pos = %f",dummyPos[1],thresholds[1]+pop->pos[p*3*+d]);
-				// msg(STATUS,"dummyPos[2] = %f, thresholds[2]+pos = %f",dummyPos[2],thresholds[2]+pop->pos[p*3*+d]);
-				// printf(" \n");
 				removedupp += 1; // debug
 				pos[p] = pos[pStop - 3];
 				pos[p + 1] = pos[pStop - 2];
@@ -1426,22 +1390,10 @@ void neExtractEmigrants3DOpen(NeutralPopulation *pop, MpiInfo *mpiInfo)
 				p -= 3;
 				pop->iStop[s]--;
 			}
-			else if ((dummyPos[0] < -1. && bnd[1] != PERIODIC) || (dummyPos[1] < -1. && bnd[2] != PERIODIC) || (dummyPos[2] < -1. && bnd[3] != PERIODIC))
+			else if ((dummyPos[0] < -1. && bnd[1] != PERIODIC) ||
+					 (dummyPos[1] < -1. && bnd[2] != PERIODIC) ||
+					 (dummyPos[2] < -1. && bnd[3] != PERIODIC))
 			{
-				// printf("%f\n",dummyPos[0]);
-				// msg(STATUS, " removing ");
-				//  Remove particle out of bounds particle
-
-				// if (s==0){
-				// 	printf("removed lower \n");
-				// 	printf("bnd[1] = %d,bnd[2] = %d,bnd[3] = %d \n",bnd[1],bnd[2],bnd[3]);
-				// 	printf("global: %f, %f, %f \n", dummyPos[0], dummyPos[1], dummyPos[2]);
-				// 	printf("local: %f, %f, %f \n", pop->pos[p+0], pop->pos[p+1],  pop->pos[p+2]);
-				// 	printf("ofsett: %i, %i, %i \n \n", offset[0], offset[1], offset[2]);
-				// }
-				// printf("too small \n");
-				// printf("%f, %f, %f \n",dummyPos[0], dummyPos[1], dummyPos[2]);
-				// printf("%f, %f, %f \n \n",pop->pos[p+0], pop->pos[p+1], pop->pos[p+2]);
 
 				removedlow += 1; // debug
 				pos[p] = pos[pStop - 3];
@@ -1455,7 +1407,12 @@ void neExtractEmigrants3DOpen(NeutralPopulation *pop, MpiInfo *mpiInfo)
 				p -= 3;
 				pop->iStop[s]--;
 			}
-			else if ((pos[p] >= ux - 1 && bnd[5] == PERIODIC) || (pos[p + 1] >= uy - 1 && bnd[6] == PERIODIC) || (pos[p + 2] >= uz - 1 && bnd[7] == PERIODIC) || (pos[p] < lx + 1 && bnd[1] == PERIODIC) || (pos[p + 1] < ly + 1 && bnd[2] == PERIODIC) || (pos[p + 2] < lz + 1 && bnd[3] == PERIODIC))
+			else if ((pos[p] >= ux - 1 && bnd[5] == PERIODIC) ||
+					 (pos[p + 1] >= uy - 1 && bnd[6] == PERIODIC) ||
+					 (pos[p + 2] >= uz - 1 && bnd[7] == PERIODIC) ||
+					 (pos[p] < lx + 1 && bnd[1] == PERIODIC) ||
+					 (pos[p + 1] < ly + 1 && bnd[2] == PERIODIC) ||
+					 (pos[p + 2] < lz + 1 && bnd[3] == PERIODIC))
 			{
 				// Should look for a better implementation ^
 
@@ -1467,29 +1424,8 @@ void neExtractEmigrants3DOpen(NeutralPopulation *pop, MpiInfo *mpiInfo)
 				int nz = -(z < lz) + (z >= uz);
 				int ne = neighborhoodCenter + nx + 3 * ny + 9 * nz;
 
-				// if (s==1){
-				// 	if (x<lx) msg(STATUS,"exhanged particle backward, s = %i \n",s);
-				// 	if (y<ly) msg(STATUS,"exhanged particle backward, s = %i \n",s);
-				// 	if (z<lz) msg(STATUS,"exhanged particle backward, s = %i \n",s);
-				// }
-				// if(p==371*3)
-				// 	msg(STATUS,"x1: %f",x);
-
 				if (ne != neighborhoodCenter)
 				{
-					// msg(STATUS, "exchanged");
-					// msg(STATUS,"ne = %i",ne);
-					// if(mpiInfo->mpiRank == 0){
-					// printf("pos = %f, %f, %f \n",x,y,z);
-					// printf("sending to %i\n \n",ne/3);
-					//}
-					// if (s==1){
-					// 	printf("exhcanged \n" );
-					// 	printf("global: %f, %f, %f \n", dummyPos[0], dummyPos[1], dummyPos[2]);
-					// 	printf("local: %f, %f, %f \n", pop->pos[p+0], pop->pos[p+1],  pop->pos[p+2]);
-					// 	printf("offset: %i, %i, %i \n \n", offset[0]+1, offset[1]+1, offset[2]+1);
-					// }
-
 					exhanged += 1;
 					*(emigrants[ne]++) = x;
 					*(emigrants[ne]++) = y;
@@ -1498,8 +1434,6 @@ void neExtractEmigrants3DOpen(NeutralPopulation *pop, MpiInfo *mpiInfo)
 					*(emigrants[ne]++) = vel[p + 1];
 					*(emigrants[ne]++) = vel[p + 2];
 					nEmigrants[ne * nSpecies + s]++;
-					// if(mpiInfo->mpiRank == 2);
-					// printf("nEmigrants[ne*nSpecies+s] = %li\n",nEmigrants[ne*nSpecies+s]);
 
 					pos[p] = pos[pStop - 3];
 					pos[p + 1] = pos[pStop - 2];
@@ -1508,17 +1442,12 @@ void neExtractEmigrants3DOpen(NeutralPopulation *pop, MpiInfo *mpiInfo)
 					vel[p + 1] = vel[pStop - 2];
 					vel[p + 2] = vel[pStop - 1];
 
-					// if(p==371*3)
-					// 	msg(STATUS,"x2: %f",pos[p]);
-
 					pStop -= 3;
 					p -= 3;
 					pop->iStop[s]--;
 				}
 			}
-		} // printf("removedupp = %li,removedlow = %li, exhanged = %li s = %i, for rank = %i \n", removedupp,removedlow,exhanged,s,mpiInfo->mpiRank);
-
-		// msg(STATUS,"pRange: %li, iStop: %li",pStart-pStop,pop->iStop[s]);
+		}
 	}
 	free(nSubdomains);
 }
@@ -1527,27 +1456,22 @@ static inline void neShiftImmigrants(MpiInfo *mpiInfo, Grid *grid, int ne, int n
 {
 
 	double *immigrants = mpiInfo->immigrants;
-	// int nSpecies = 1;//mpiInfo->nSpecies;
 	long int nImmigrantsTotal = alSum(&mpiInfo->nImmigrants[ne * nSpecies], nSpecies);
 	int nDims = mpiInfo->nDims;
 
 	for (int d = 0; d < nDims; d++)
 	{
 		int n = ne % 3 - 1;
+		// TODO: why?
 		ne /= 3;
 
 		double shift = n * grid->trueSize[d + 1];
 
 		for (int i = 0; i < nImmigrantsTotal; i++)
 		{
-
-			// msg(STATUS," immigrants[d+2*nDims*i] = %f ",immigrants[d+2*nDims*i]);
-
 			immigrants[d + 2 * nDims * i] += shift;
 
 			double pos = immigrants[d + 2 * nDims * i];
-			// msg(STATUS," ne = %i, n = %i ",ne,n);
-			// msg(STATUS," shift = %f, pos = %f \n",shift,pos);
 
 			if (pos > grid->trueSize[d + 1] + 2)
 			{
@@ -1565,7 +1489,6 @@ static inline void neImportParticles(NeutralPopulation *pop, double *particles, 
 
 	for (int s = 0; s < nSpecies; s++)
 	{
-		// printf("nParticles[s] = %li \n",nParticles[s]);
 		double *pos = &pop->pos[nDims * iStop[s]];
 		double *vel = &pop->vel[nDims * iStop[s]];
 
@@ -1576,9 +1499,7 @@ static inline void neImportParticles(NeutralPopulation *pop, double *particles, 
 			for (int d = 0; d < nDims; d++)
 			{
 				*(vel++) = *(particles++);
-				// printf("d = %i, pos = %f \n",d,particles[-1]);
 			}
-			// printf("\n");
 		}
 
 		iStop[s] += nParticles[s];
@@ -1597,8 +1518,6 @@ static inline void neExchangeMigrants(NeutralPopulation *pop, MpiInfo *mpiInfo, 
 	long int *nImmigrants = mpiInfo->nImmigrants;
 	MPI_Request *send = mpiInfo->send;
 
-	// printf("nImmigrantsAlloc = %li \n",nImmigrantsAlloc);
-
 	for (int ne = 0; ne < nNeighbors; ne++)
 	{
 		if (ne != mpiInfo->neighborhoodCenter)
@@ -1607,8 +1526,6 @@ static inline void neExchangeMigrants(NeutralPopulation *pop, MpiInfo *mpiInfo, 
 			int reciprocal = puNeighborToReciprocal(ne, nDims);
 			long int *nEmigrants = &mpiInfo->nEmigrants[nSpecies * ne];
 			long int length = alSum(nEmigrants, nSpecies) * 2 * nDims;
-			// printf("length = %li \n",length);
-			// printf("nEmigrants = %i, nSpecies = %li \n",nEmigrants[0],nSpecies);
 			MPI_Isend(emigrants[ne], length, MPI_DOUBLE, rank, reciprocal, MPI_COMM_WORLD, &send[ne]);
 		}
 	}
@@ -1623,9 +1540,7 @@ static inline void neExchangeMigrants(NeutralPopulation *pop, MpiInfo *mpiInfo, 
 		MPI_Recv(immigrants, nImmigrantsAlloc, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 		int ne = status.MPI_TAG; // Which neighbor it is from equals the tag
 
-		// adPrint(mpiInfo->immigrants,6);
 		neShiftImmigrants(mpiInfo, grid, ne, nSpecies);
-		// adPrint(mpiInfo->immigrants,6);
 		neImportParticles(pop, immigrants, &nImmigrants[ne * nSpecies], nSpecies);
 	}
 
@@ -1650,7 +1565,6 @@ static inline void neExchangeNMigrants(NeutralPopulation *pop, MpiInfo *mpiInfo)
 		{
 			int rank = puNeighborToRank(mpiInfo, ne);
 			int reciprocal = puNeighborToReciprocal(ne, mpiInfo->nDims);
-			// msg(STATUS,"ne =%i, rank = %i, reciprocal = %i",ne,rank,reciprocal);
 			long int *nEmigrants = &mpiInfo->nEmigrants[nSpecies * ne];
 			long int *nImmigrants = &mpiInfo->nImmigrants[nSpecies * ne];
 			// We get segfault on large simulation systems, as a safety measure we can
@@ -1706,34 +1620,24 @@ void neSetI(Grid *I, Grid *V, Grid *rho, const dictionary *ini)
 
 	gZero(I);
 	double *IEVal = I->val;
-	// double *bulkVVal = V->val;
 	double *rhoVal = rho->val;
-
-	// double *mass = pop->mass;
 
 	int rank = I->rank;
 	long int *sizeProd = I->sizeProd;
 	long int *fieldSizeProd = V->sizeProd;
-	// double rho0 = pop->rho0;
 
 	int nDims = rank - 1;
 	int nSpecies = iniGetInt(ini, "collisions:nSpeciesNeutral");
-	// double *velDrift = iniGetDoubleArr(ini,"collisions:neutralDrift",nDims*nSpecies);
 	double *velTherm = iniGetDoubleArr(ini, "collisions:thermalVelocityNeutrals", nDims * nSpecies);
 
-	// int index = 0;
-	// printf("sizeProd[1] = %i, %i, %i, %i \n",sizeProd[1],sizeProd[2],sizeProd[3],sizeProd[4]);
 	long int f;
 	long int s;
-	// int fNext = fieldSizeProd[1];
 
-	long int start = 0; // alSum(&sizeProd[1], rank-1 );
+	// TODO: If 0 is hardcoded, is the subtraction necessary?
+	long int start = 0;
 	long int end = sizeProd[rank] - start;
 
-	long int fieldstart = 0; // alSum(&fieldSizeProd[1], rank-1 );
-	// long int fieldend = fieldSizeProd[rank]-start;
-
-	// printf("start = %li, end = %li \n",start,end);
+	long int fieldstart = 0;
 
 	// Centered Finite difference
 	for (int d = 1; d < rank; d++)
@@ -1742,17 +1646,10 @@ void neSetI(Grid *I, Grid *V, Grid *rho, const dictionary *ini)
 
 		s = start;
 
-		// printf("\n \n");
 		for (int g = start; g < end; g++)
 		{
-			// IEVal[g] += 0.5*((rhoVal[g])/(mass[0]))*sqrt(bulkVVal[f]*bulkVVal[f]);
-			IEVal[g] = 0.5 * ((rhoVal[g])) * velTherm[0] * velTherm[0]; //(bulkVVal[f+ (d-1)])*(bulkVVal[f+ (d-1)]);//0.01*(((mass[0]*rhoVal[g]/rho0)))*bulkVVal[f]*bulkVVal[f];
-
-			// exit(0);
-			// printf("Using index s = %li, f = %li \n",s,f);
-
-			// printf("IEVal[g] = %f, rhoVal[g] = %f \n",IEVal[g],rhoVal[g] );
-			// printf("%f, %f \n",PVal[sPrev], bulkVVal[fPrev]  );
+			// TODO: Why recalculate most of it all the time?
+			IEVal[g] = 0.5 * ((rhoVal[g])) * velTherm[0] * velTherm[0];
 			if (g > sizeProd[rank])
 			{
 				msg(ERROR, "index out of bounds in neSetI");
@@ -1765,80 +1662,28 @@ void neSetI(Grid *I, Grid *V, Grid *rho, const dictionary *ini)
 
 			s++; // fNext;
 
-			// printf("node: %li, using %li, and %li \n",g,fNext,fPrev);
-			// printf("fieldSizeProd = %li, scalarsizeProd = %li \n \n",fieldSizeProd[4],sizeProd[4]);
 		}
-		// printf("\n \n");
 	}
-	// exit(0);
 }
-//
-// void nePressureInitiate3D(Grid *rhoNeutral,Grid *P,NeutralPopulation *pop, const MpiInfo *mpiInfo){
-//
-// 	gHaloOp(setSlice, rhoNeutral, mpiInfo, TOHALO);
-// 	gZero(P);
-// 	//gZero(rhoNeutral);
-//
-//     int *nGhostLayers = rhoNeutral->nGhostLayers;
-// 	int *trueSize=rhoNeutral->trueSize;
-// 	long int *sizeProd =  rhoNeutral->sizeProd;
-// 	double stiffC = pop->stiffnessConstant;
-// 	double rho0 = pop->rho0;
-// 	//Seperate values
-// 	double *PVal = P->val;
-// 	double *rhoVal = rhoNeutral->val;
-// 	double val = 0;
-//
-//     //aiPrint(nGhostLayers,8);
-// 	int index = 0;
-// 	//printf("sizeProd[1] = %i, %i, %i, %i \n",sizeProd[1],sizeProd[2],sizeProd[3],sizeProd[4]);
-// 	for(int k=0;k<trueSize[3]+nGhostLayers[7];k++){
-// 		for(int j=0;j<trueSize[2]+nGhostLayers[6];j++){
-// 			for(int i=0;i<trueSize[1]+nGhostLayers[5];i++){
-// 				index = i+j*sizeProd[2]+k*sizeProd[3];
-// 				val = stiffC*(pow( (rhoVal[index]/rho0),7) - 1); //rho0
-// 				PVal[index] = val;
-// 				//if (val >1000){
-// 				//printf("PVal[index] = %f, rhoval = %f \n",PVal[index],rhoVal[index]);
-// 				//}
-// 				//printf(" %f \n",rhoVal[index]);
-// 				//printf("index = %li, sizeprod = %li \n",index,sizeProd[4]);
-// 			}
-//
-// 		}
-// 	}
-// 	//for(int i=0;i<sizeProd[4];i++){
-// 	//	PVal[i] = stiffC*(pow( (rhoVal[i]/rho0),7) - 1);
-// 	//printf("index = %li, sizeprod = %li \n",index,sizeProd[4]);
-// 	//printf("PVal = %f \n",PVal[i] );
-// 	//}
-// 	//gHaloOp(setSlice, P, mpiInfo, TOHALO);
-// 	//nuGBnd(P, mpiInfo);
-// }
 
 void nePressureSolve3D(Grid *P, Grid *IE, Grid *rho, NeutralPopulation *pop)
 {
-
-	// gHaloOp(setSlice, rhoNeutral, mpiInfo, TOHALO);
 	gZero(P);
-	// gZero(rhoNeutral);
 
 	double *mass = pop->mass;
 	int *nGhostLayers = P->nGhostLayers;
 	int *trueSize = P->trueSize;
 	long int *sizeProd = P->sizeProd;
-	// double stiffC = pop->stiffnessConstant;
 	double rho0 = pop->rho0;
 	// Seperate values
 	double *PVal = P->val;
 	double *IEVal = IE->val;
 	double *rhoVal = rho->val;
-	// double val = 0;
 
 	double gamma = 5. / 3.; // Adiabatic index
-							// aiPrint(nGhostLayers,8);
+
 	int index = 0;
-	// printf("sizeProd[1] = %i, %i, %i, %i \n",sizeProd[1],sizeProd[2],sizeProd[3],sizeProd[4]);
+
 	for (int k = nGhostLayers[1]; k < trueSize[3] + nGhostLayers[7]; k++)
 	{
 		for (int j = nGhostLayers[2]; j < trueSize[2] + nGhostLayers[6]; j++)
@@ -1846,39 +1691,23 @@ void nePressureSolve3D(Grid *P, Grid *IE, Grid *rho, NeutralPopulation *pop)
 			for (int i = nGhostLayers[3]; i < trueSize[1] + nGhostLayers[5]; i++)
 			{
 				index = i + j * sizeProd[2] + k * sizeProd[3];
-				// val = stiffC*(pow( (rhoVal[index]/rho0),7) - 1); //rho0
-				// printf("rhoVal[index] = %f \n",rhoVal[index]);
 				if (rhoVal[index] == 0)
 				{
-					// msg(WARNING,"low density encountered, correcting pressure. Energy is not conserved.");
-					PVal[index] = 0; //(gamma-1)*rhoVal[index]*mass[0]*IEVal[index];
+					PVal[index] = 0;
 				}
+				// TODO: else? It will be multiplied by zero anyway, is it really needed at all?
 				if (rhoVal[index] != 0)
 				{
-					PVal[index] = (gamma - 1) * (rhoVal[index] / rho0) * mass[0] * IEVal[index]; // should be multiplied by massss for several species
+					// should be multiplied by massss for several species
+					PVal[index] = (gamma - 1) * (rhoVal[index] / rho0) * mass[0] * IEVal[index];
 				}
-				// if (val >1000){
-				// printf("PVal[%i] = %f, IEVal[%i] = %f \n",PVal[index],IEVal[index]);
-				// }
-				// printf(" %f \n",rhoVal[index]);
-				// printf("index = %li, sizeprod = %li \n",index,sizeProd[4]);
 			}
 		}
 	}
-	// for(int i=0;i<sizeProd[4];i++){
-	//	PVal[i] = stiffC*(pow( (rhoVal[i]/rho0),7) - 1);
-	// printf("index = %li, sizeprod = %li \n",index,sizeProd[4]);
-	// printf("PVal = %f \n",PVal[i] );
-	// }
-	// exit(0);
-	// gHaloOp(setSlice, P, mpiInfo, TOHALO);
-	// nuGBnd(P, mpiInfo);
 }
 
 void neAdvectI(Grid *IE, Grid *Itilde, Grid *P, Grid *V, Grid *rho, NeutralPopulation *pop)
 {
-
-	// neInternalEnergySolve(IE,P,bulkV,rhoNeutral,neutralPop);
 	gZero(Itilde);
 	double *PVal = P->val;
 	double *IEVal = IE->val;
@@ -1891,22 +1720,14 @@ void neAdvectI(Grid *IE, Grid *Itilde, Grid *P, Grid *V, Grid *rho, NeutralPopul
 	int rank = IE->rank;
 	long int *sizeProd = IE->sizeProd;
 	long int *fieldSizeProd = V->sizeProd;
-	// int *trueSize= IE->trueSize;
-	// int *nGhostLayers = IE->nGhostLayers;
 
-	// int index = 0;
-	// printf("sizeProd[1] = %i, %i, %i, %i \n",sizeProd[1],sizeProd[2],sizeProd[3],sizeProd[4]);
 	long int fNext, fPrev, sNext, sPrev;
 	long int s, f;
-	// int fNext = fieldSizeProd[1];
 
 	long int start = alSum(&sizeProd[1], rank - 1);
 	long int end = sizeProd[rank] - start;
 
 	long int fieldstart = alSum(&fieldSizeProd[1], rank - 1);
-	// long int fieldend = fieldSizeProd[rank]-start;
-
-	// printf("start = %li, end = %li \n",start,end);
 
 	// Centered Finite difference
 	for (int d = 1; d < rank; d++)
@@ -1920,78 +1741,59 @@ void neAdvectI(Grid *IE, Grid *Itilde, Grid *P, Grid *V, Grid *rho, NeutralPopul
 		s = start;
 		f = fieldstart + (d - 1);
 
-		// PVal[fPrev] is a scalar not field
-		// printf("\n \n");
 		for (int g = start; g < end; g++)
 		{
 			if (rhoVal[g] == 0.)
 			{
-				// printf("rhoVal[g] = %f \n",rhoVal[g]);
-				// msg(WARNING,"zero dens in IE calculation with index = %i, energy is not conserved.",g);
-				ItildeVal[g] = 0; // IEVal[g]/nDims + (1./(2.*mass[0]*12.))*(PVal[sPrev]*(bulkVVal[fPrev]-bulkVVal[f]) - PVal[sNext]*(bulkVVal[fNext]-bulkVVal[f]));
+				ItildeVal[g] = 0;
 			}
+			// TODO: else?
 			if (rhoVal[g] != 0.)
 			{
-				ItildeVal[g] += IEVal[g] / nDims + (1. / (2 * mass[0] * rhoVal[g])) * (PVal[sPrev] * (bulkVVal[fPrev] - bulkVVal[f]) - PVal[sNext] * (bulkVVal[fNext] - bulkVVal[f]));
-				//( rhoVal[g]*gradBulkVVal[f+d-1]*gradBulkVVal[f+d-1]);
-				// printf("tildeval = %f, oldval = %f change = %f \n",ItildeVal[g] ,IEVal[g],(ItildeVal[g]-IEVal[g]));
-				// printf("rhoVal[g]  = %f, PVal[sPrev] = %f, PVal[sNext]  = %f  \n",rhoVal[g],PVal[sPrev],PVal[sNext]  );
+				ItildeVal[g] += IEVal[g] / nDims + (1. / (2 * mass[0] * rhoVal[g]))
+												 * (PVal[sPrev] * (bulkVVal[fPrev] - bulkVVal[f])
+												  - PVal[sNext] * (bulkVVal[fNext] - bulkVVal[f]));
 			}
-			// exit(0);
 			fNext += rank - 1;
 			fPrev += rank - 1;
 			sNext++;
 			sPrev++;
 			s++; // fNext;
 			f += rank - 1;
-			// printf("IEVal[g] = %f, rhoVal[g] = %f \n",IEVal[g],rhoVal[g] );
-			// printf("%f, %f \n",PVal[sPrev], bulkVVal[fPrev]  );
+
 			if (g > sizeProd[rank])
 			{
 				msg(ERROR, "index out of bounds in neInternalEnergySolve");
 			}
 			if (fNext > fieldSizeProd[rank])
 			{
-				msg(ERROR, "index out of bounds in neInternalEnergySolve, index: %li max: %li, scalar index: %li", fNext, fieldSizeProd[rank], s);
+				msg(ERROR, "index out of bounds in neInternalEnergySolve, index: %li max: %li, scalar index: %li",
+					fNext, fieldSizeProd[rank], s);
 			}
-			// printf("node: %li, using %li, and %li \n",g,fNext,fPrev);
-			// printf("fieldSizeProd = %li, scalarsizeProd = %li \n \n",fieldSizeProd[4],sizeProd[4]);
 		}
 	}
-	// exit(0);
 }
 
 void neAdvectV(Grid *V, Grid *Vtilde, Grid *P, Grid *rho, NeutralPopulation *pop)
 {
-
-	// neInternalEnergySolve(IE,P,bulkV,rhoNeutral,neutralPop);
 	gZero(Vtilde);
 	double *PVal = P->val;
 	double *bulkVVal = V->val;
 	double *bulkVtildeVal = Vtilde->val;
 	double *rhoVal = rho->val;
 	double *mass = pop->mass;
-	// int nDims = pop->nDims;
 
-	// adPrint(rhoVal,rho->sizeProd[4]);
-	// exit(0);
 	int rank = P->rank;
 	long int *sizeProd = P->sizeProd;
 	long int *fieldSizeProd = V->sizeProd;
 
-	// int index = 0;
-	// printf("sizeProd[1] = %i, %i, %i, %i \n",sizeProd[1],sizeProd[2],sizeProd[3],sizeProd[4]);
 	long int fNext, fPrev, sNext, sPrev;
 	long int s, f;
-	// int fNext = fieldSizeProd[1];
 
 	long int start = alSum(&sizeProd[1], rank - 1);
 	long int end = sizeProd[rank] - start;
 
 	long int fieldstart = alSum(&fieldSizeProd[1], rank - 1);
-	// long int fieldend = fieldSizeProd[rank]-start;
-
-	// printf("start = %li, end = %li \n",start,end);
 
 	// Centered Finite difference
 	for (int d = 1; d < rank; d++)
@@ -2005,50 +1807,34 @@ void neAdvectV(Grid *V, Grid *Vtilde, Grid *P, Grid *rho, NeutralPopulation *pop
 		s = start;
 		f = fieldstart;
 
-		// PVal[fPrev] is a scalar not field
-		// printf("\n \n");
 		for (int g = start; g < end; g++)
 		{
-			// printf("start = %li \n",start);
 			if (rhoVal[g] == 0.)
 			{
-				// printf("rhoVal[g] = %f \n",rhoVal[g]);
-				// msg(ERROR,"zero dens in V calculation with index = %i, energy is not conserved.",g);
-				bulkVtildeVal[f + d - 1] = 0; // bulkVVal[f+d-1]+(1./(2.*mass[0]*12.))*(PVal[sPrev]-PVal[sNext]);
+				bulkVtildeVal[f + d - 1] = 0;
 			}
+			// TODO: else?
 			if (rhoVal[g] != 0.)
 			{
-				// printf("rhoVal[g] = %f \n",rhoVal[g]);
 				bulkVtildeVal[f + d - 1] = bulkVVal[f + d - 1] + (1. / (2 * mass[0] * rhoVal[g])) * (PVal[sPrev] - PVal[sNext]);
-				//( rhoVal[g]*gradBulkVVal[f+d-1]*gradBulkVVal[f+d-1]);
-				// printf("val = %f\n",(1./(2*rhoVal[g]))*(PVal[sPrev]-PVal[sNext]));
-				// if(bulkVtildeVal[f+d-1] > 1.){
-				// 	printf("Large velocity in dim %i, val = %f       , ",d,(bulkVtildeVal[f+d-1]));
-				//
-				// }
 			}
-			// exit(0);
 			fNext += rank - 1;
 			fPrev += rank - 1;
 			sNext++;
 			sPrev++;
 			s++; // fNext;
 			f += rank - 1;
-			// printf("IEVal[g] = %f, rhoVal[g] = %f \n",IEVal[g],rhoVal[g] );
-			// printf("%f, %f \n",PVal[sPrev], bulkVVal[fPrev]  );
 			if (g > sizeProd[rank])
 			{
 				msg(ERROR, "index out of bounds in neInternalEnergySolve");
 			}
 			if (fNext > fieldSizeProd[rank])
 			{
-				msg(ERROR, "index out of bounds in neInternalEnergySolve, index: %li max: %li, scalar index: %li", fNext, fieldSizeProd[rank], s);
+				msg(ERROR, "index out of bounds in neInternalEnergySolve, index: %li max: %li, scalar index: %li",
+					fNext, fieldSizeProd[rank], s);
 			}
-			// printf("node: %li, using %li, and %li \n",g,fNext,fPrev);
-			// printf("fieldSizeProd = %li, scalarsizeProd = %li \n \n",fieldSizeProd[4],sizeProd[4]);
 		}
 	}
-	// exit(0);
 }
 
 void neConvectV(Grid *V, Grid *Vtilde, Grid *rhoNeutral, NeutralPopulation *pop)
@@ -2090,27 +1876,15 @@ void neConvectV(Grid *V, Grid *Vtilde, Grid *rhoNeutral, NeutralPopulation *pop)
 
 			if (indexPrev != index)
 			{
-				// printf("\n indexPrev = %li, index = %li \n",indexPrev,index);
-				// printf("\n \n");
 				long int fieldIndexPrev = jPrev * fieldSizeProd[1] + kPrev * fieldSizeProd[2] + lPrev * fieldSizeProd[3];
 				long int fieldIndex = j * fieldSizeProd[1] + k * fieldSizeProd[2] + l * fieldSizeProd[3];
-				// printf("fieldindexPrev = %li, fieldindex = %li \n",fieldIndexPrev,fieldIndex);
-				// printf("jPrev = %i, kPrev, = %i, lPrev, = %i \n",jPrev,kPrev,lPrev);
-				// printf("j = %i, k, = %i, l, = %i \n",j,k,l);
-				// printf("iPrev 0 %li, i = %li \n \n",indexPrev,index);
-				// printf("\n \n");
 				for (int d = 0; d < nDims; d++)
 				{
-					vVal[fieldIndex + d] = (rhoVal[index] * vtildeVal[fieldIndex + d] + vtildeVal[fieldIndexPrev + d]) / (rhoVal[index] + 1);
+					vVal[fieldIndex + d] = (rhoVal[index] * vtildeVal[fieldIndex + d] + vtildeVal[fieldIndexPrev + d])
+										 / (rhoVal[index] + 1);
 				}
 				rhoVal[index] += 1;
 				rhoVal[indexPrev] -= 1;
-				// if(rhoVal[indexPrev] == 0.){
-				// for (int d = 0;d<nDims;d++){
-				// vVal[fieldIndexPrev+d] = 0.0;
-
-				//}
-				//}
 			}
 		}
 	}
@@ -2157,13 +1931,10 @@ void neConvectKE(Grid *dKE, Grid *Vtilde, Grid *rhoNeutral, NeutralPopulation *p
 			{
 				long int fieldIndexPrev = jPrev * fieldSizeProd[1] + kPrev * fieldSizeProd[2] + lPrev * fieldSizeProd[3];
 				long int fieldIndex = j * fieldSizeProd[1] + k * fieldSizeProd[2] + l * fieldSizeProd[3];
-				// printf("jPrev = %i, kPrev, = %i, lPrev, = %i \n",jPrev,kPrev,lPrev);
-				// printf("j = %i, k, = %i, l, = %i \n",j,k,l);
-				// printf("iPrev 0 %li, i = %li \n \n",indexPrev,index);
 				for (int d = 0; d < nDims; d++)
 				{
-					dKEVal[index] -= 0.5 * mass[0] * (rhoVal[index] / (rhoVal[index] + 1)) * pow((vtildeVal[fieldIndexPrev + d] - vtildeVal[fieldIndex + d]), 2);
-					// printf("dKEVal[index] = %f, %i \n",dKEVal[index],d);
+					dKEVal[index] -= 0.5 * mass[0] * (rhoVal[index] / (rhoVal[index] + 1))
+								   * pow((vtildeVal[fieldIndexPrev + d] - vtildeVal[fieldIndex + d]), 2);
 				}
 			}
 		}
@@ -2181,7 +1952,6 @@ void neConvectI(Grid *IE, Grid *Itilde, Grid *dKE, Grid *rhoNeutral, NeutralPopu
 	double *IVal = IE->val;
 	double *ItildeVal = Itilde->val;
 	double *rhoVal = rhoNeutral->val;
-	// long int *fieldSizeProd = Vtilde->sizeProd;
 	long int *sizeProd = dKE->sizeProd;
 
 	int nDims = pop->nDims;
@@ -2210,24 +1980,11 @@ void neConvectI(Grid *IE, Grid *Itilde, Grid *dKE, Grid *rhoNeutral, NeutralPopu
 			long int index = j + k * sizeProd[2] + l * sizeProd[3];
 			if (indexPrev != index)
 			{
-				// long int fieldIndexPrev= jPrev*fieldSizeProd[1] + kPrev*fieldSizeProd[2] + lPrev*fieldSizeProd[3];
-				// long int fieldIndex= j*fieldSizeProd[1] + k*fieldSizeProd[2] + l*fieldSizeProd[3];
-				// printf("jPrev = %i, kPrev, = %i, lPrev, = %i \n",jPrev,kPrev,lPrev);
-				// printf("j = %i, k, = %i, l, = %i \n",j,k,l);
-				// printf("iPrev 0 %li, i = %li \n \n",indexPrev,index);
-				// printf("CONVECTING I \n");
-				// for (int d = 0;d<nDims;d++){
-				IVal[index] = (rhoVal[index] * IVal[index] + ItildeVal[indexPrev]) / (rhoVal[index] + 1) + 0; // sqrt(pow(dKEVal[index],2))/((rhoVal[index]+1)*mass[0]);
+				IVal[index] = (rhoVal[index] * IVal[index] + ItildeVal[indexPrev]) / (rhoVal[index] + 1) + 0;
 				if (rhoVal[indexPrev] == 0.0)
 				{
 					IVal[indexPrev] = rhoVal[indexPrev] * ItildeVal[indexPrev];
 				}
-				// if(sqrt(pow(dKEVal[index],2))/((rhoVal[index]+1)*mass[0]) > 1.){
-				// 	printf("Large dKE val = %f       , ",(sqrt(pow(dKEVal[index],2))/((rhoVal[index]+1)*mass[0])));
-				//
-				// }
-				// printf("IVal[index] = %f iTide = %f\n",IVal[index],ItildeVal[index]);
-				//}
 			}
 		}
 	}
@@ -2247,8 +2004,6 @@ void neAddPressure(Grid *bulkV, Grid *Pgrad, Grid *rho)
 	double *PgradVal = Pgrad->val;
 	double *rhoVal = rho->val;
 
-	// double *mass = pop->mass;
-
 	// indices
 	long int s;
 	long int f;
@@ -2261,19 +2016,14 @@ void neAddPressure(Grid *bulkV, Grid *Pgrad, Grid *rho)
 	for (int d = 1; d < rank; d++)
 	{
 		s = start;
-		// sPrev = start - sizeProd[d];
 		f = start * fieldSizeProd[1] + (d - 1);
 
 		for (int g = start; g < end; g++)
 		{
 			bulkVVal[f] += (1. / (2. * rhoVal[s])) * PgradVal[f];
 			s++;
-			// sPrev++;
 			f += fNext;
-			// printf("scalarIndex = %li sizeProd[4] = %li\n",s,sizeProd[4]);
-			// printf("node: %li, using %li, and %li \n",f,sNext,sPrev);
 		}
-		// printf(" \n \n");
 	}
 }
 
@@ -2288,14 +2038,8 @@ void neSetBndSlices(Grid *grid, const MpiInfo *mpiInfo)
 	int *size = grid->size;
 	bndType *bnd = grid->bnd;
 	double *bndSlice = grid->bndSlice;
-	// int *nGhostLayers = grid->nGhostLayers;
-	// double *bndSolution = grid->bndSolution;
 	int *subdomain = mpiInfo->subdomain;
 	int *nSubdomains = mpiInfo->nSubdomains;
-	// int nDims = mpiInfo->nDims;
-
-	// using ini is slow, but setting boundary slices is likely only done once.
-	// int nSpecies = iniGetInt(ini,"collisions:nSpeciesNeutral");
 
 	// Number of elements in slice
 	long int nSliceMax = 0;
@@ -2311,7 +2055,7 @@ void neSetBndSlices(Grid *grid, const MpiInfo *mpiInfo)
 			nSliceMax = nSlice;
 	}
 
-	// double constant1 = 0.; //Dirichlet
+	// TODO: Always 0?
 	double constant2 = 0.; // solution to bnd cond = 0.
 
 	// Lower edge
@@ -2323,12 +2067,7 @@ void neSetBndSlices(Grid *grid, const MpiInfo *mpiInfo)
 			{
 				for (int s = 0; s < nSliceMax; s++)
 				{
-					// for(int dd = 0;dd<rank-1;dd++){ //dot prod of VxB and indices
-					//  grid indices (i,j,k) are computed locally, so we need to
-					//  cast them to global frame in the dot product
 					bndSlice[s + (nSliceMax * d)] = 0.;
-
-					//}
 				}
 			}
 			if (bnd[d] == NEUMANN)
@@ -2357,9 +2096,7 @@ void neSetBndSlices(Grid *grid, const MpiInfo *mpiInfo)
 				{
 
 					bndSlice[s + (nSliceMax * (d))] = 0;
-					// for(int dd = 0;dd<rank-1;dd++){
 					bndSlice[s + (nSliceMax * (d))] = 0.;
-					//}
 				}
 			}
 
@@ -2373,9 +2110,6 @@ void neSetBndSlices(Grid *grid, const MpiInfo *mpiInfo)
 		}
 	}
 
-	// msg(STATUS,"nSliceMax = %li",nSliceMax);
-	// adPrint(&bndSlice[nSliceMax], nSliceMax*(rank));
-
 	return;
 }
 
@@ -2387,8 +2121,6 @@ void neSetBndSlicesEnerg(const dictionary *ini, Grid *grid, Grid *rho, const Mpi
 	bndType *bnd = grid->bnd;
 	double *bndSlice = grid->bndSlice;
 	double *sendSlice = rho->sendSlice;
-	// int *nGhostLayers = grid->nGhostLayers;
-	// double *bndSolution = grid->bndSolution;
 	int *subdomain = mpiInfo->subdomain;
 	int *nSubdomains = mpiInfo->nSubdomains;
 	int nDims = mpiInfo->nDims;
@@ -2396,8 +2128,6 @@ void neSetBndSlicesEnerg(const dictionary *ini, Grid *grid, Grid *rho, const Mpi
 	// using ini is slow, but setting boundary slices is likely only done once.
 	int nSpecies = iniGetInt(ini, "collisions:nSpeciesNeutral");
 	double *velTherm = iniGetDoubleArr(ini, "collisions:thermalVelocityNeutrals", nDims * nSpecies);
-	// double *density = iniGetDoubleArr(ini, "collisions:numberDensityNeutrals", nSpecies);
-	// double rho0 = density[0];
 
 	double veld[nDims];
 
@@ -2405,7 +2135,6 @@ void neSetBndSlicesEnerg(const dictionary *ini, Grid *grid, Grid *rho, const Mpi
 	{
 		for (int d = 0; d < nDims; d++)
 		{
-			// msg(STATUS,"d = %i, d+s*nDims = %i",d,d+s*nDims);
 			veld[d] += (1. / nSpecies) * velTherm[d + s * nDims];
 		}
 	}
@@ -2413,7 +2142,6 @@ void neSetBndSlicesEnerg(const dictionary *ini, Grid *grid, Grid *rho, const Mpi
 	double Dspeed = 0;
 	for (int d = 0; d < nDims; d++)
 	{
-		// msg(STATUS,"d = %i, d+s*nDims = %i",d,d+s*nDims);
 		Dspeed += sqrt(veld[d] * veld[d]);
 	}
 
@@ -2431,7 +2159,6 @@ void neSetBndSlicesEnerg(const dictionary *ini, Grid *grid, Grid *rho, const Mpi
 			nSliceMax = nSlice;
 	}
 
-	// double constant1 = 0.; //Dirichlet
 	double constant2 = 0.; // solution to bnd cond = 0.
 
 	// Lower edge
@@ -2444,11 +2171,7 @@ void neSetBndSlicesEnerg(const dictionary *ini, Grid *grid, Grid *rho, const Mpi
 				getSlice(sendSlice, rho, d, 1);
 				for (int s = 0; s < nSliceMax; s++)
 				{
-					// for(int dd = 0;dd<rank-1;dd++){ //dot prod of VxB and indices
-
 					bndSlice[s + (nSliceMax * d)] = 0.5 * (sendSlice[s]) * velTherm[0] * velTherm[0];
-
-					//}
 				}
 			}
 			if (bnd[d] == NEUMANN)
@@ -2472,16 +2195,10 @@ void neSetBndSlicesEnerg(const dictionary *ini, Grid *grid, Grid *rho, const Mpi
 		{
 			if (bnd[d] == DIRICHLET)
 			{
-				// printf(" \n size[d-rank]-1 = %i \n",(size[d-rank]-2) );
-
 				getSlice(sendSlice, rho, d - rank, size[d - rank] - 2);
 				for (int s = 0; s < nSliceMax; s++)
 				{
-					// printf("  sendSlice[s] = %f \n",sendSlice[s] );
-					// bndSlice[s + (nSliceMax * (d))] = 0;
-					// for(int dd = 0;dd<rank-1;dd++){
 					bndSlice[s + (nSliceMax * (d))] = 0.5 * (sendSlice[s]) * velTherm[0] * velTherm[0];
-					//}
 				}
 			}
 
@@ -2494,9 +2211,6 @@ void neSetBndSlicesEnerg(const dictionary *ini, Grid *grid, Grid *rho, const Mpi
 			}
 		}
 	}
-
-	// msg(STATUS,"nSliceMax = %li",nSliceMax);
-	// adPrint(&bndSlice[nSliceMax], nSliceMax*(rank));
 
 	return;
 }
