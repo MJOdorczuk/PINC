@@ -2222,8 +2222,6 @@ void neSetBndSlicesVel(const dictionary *ini, Grid *grid, const MpiInfo *mpiInfo
 	int *size = grid->size;
 	bndType *bnd = grid->bnd;
 	double *bndSlice = grid->bndSlice;
-	// int *nGhostLayers = grid->nGhostLayers;
-	// double *bndSolution = grid->bndSolution;
 	int *subdomain = mpiInfo->subdomain;
 	int *nSubdomains = mpiInfo->nSubdomains;
 	int nDims = mpiInfo->nDims;
@@ -2238,7 +2236,6 @@ void neSetBndSlicesVel(const dictionary *ini, Grid *grid, const MpiInfo *mpiInfo
 	{
 		for (int d = 0; d < nDims; d++)
 		{
-			// msg(STATUS,"d = %i, d+s*nDims = %i",d,d+s*nDims);
 			veld[d] += (1. / nSpecies) * velDrift[d + s * nDims];
 		}
 	}
@@ -2258,7 +2255,6 @@ void neSetBndSlicesVel(const dictionary *ini, Grid *grid, const MpiInfo *mpiInfo
 	}
 	nSliceMax = nSliceMax * nDims;
 
-	// double constant1 = 0.; //Dirichlet
 	double constant2 = 0.; // solution to bnd cond = 0.
 
 	// Lower edge
@@ -2321,10 +2317,7 @@ void neSetBndSlicesVel(const dictionary *ini, Grid *grid, const MpiInfo *mpiInfo
 		}
 	}
 
-	// msg(STATUS,"nSliceMax = %li",nSliceMax);
-	// adPrint(&bndSlice[nSliceMax], nSliceMax*(rank));
 	free(velDrift);
-	// free(B);
 	return;
 }
 
@@ -2341,7 +2334,6 @@ void neIndexToPos3D(Grid *grid, long int index, long int *pos)
 	k = (int)(p / sizeProd[3]);
 	j = (int)((p - k * sizeProd[3]) / (sizeProd[2]));
 	i = (int)(p - j * sizeProd[2] - k * sizeProd[3]) / sizeProd[1];
-	// printf("pos = %li,%li,%li \n",i,j,k);
 	pos[0] = i;
 	pos[1] = j;
 	pos[2] = k;
@@ -2349,10 +2341,7 @@ void neIndexToPos3D(Grid *grid, long int index, long int *pos)
 
 void neApplyObjVel(PincObject *obj, Grid *V)
 {
-
-	// neInternalEnergySolve(IE,P,bulkV,rhoNeutral,neutralPop);
 	double *val = V->val;
-	// int nDims = pop->nDims;
 
 	int rank = obj->domain->rank;
 	long int *lookupSurfOff = obj->lookupSurfaceOffset;
@@ -2360,24 +2349,17 @@ void neApplyObjVel(PincObject *obj, Grid *V)
 	long int *sizeProd = obj->domain->sizeProd;
 	long int *fieldSizeProd = V->sizeProd;
 
-	// int index = 0;
-	// printf("sizeProd[1] = %i, %i, %i, %i \n",sizeProd[1],sizeProd[2],sizeProd[3],sizeProd[4]);
 	long int fNext, fPrev, sNext, sPrev;
 	long int s, f;
-	// int fNext = fieldSizeProd[1];
 
 	long int start = alSum(&sizeProd[1], rank - 1);
 	long int end = sizeProd[rank] - start;
 
 	long int fieldstart = alSum(&fieldSizeProd[1], rank - 1);
-	// long int fieldend = fieldSizeProd[rank]-start;
 
 	bool prevInside, nextInside;
 	for (int d = 1; d < rank; d++)
 	{
-		// fNext = fieldstart + fieldSizeProd[d]+(d-1);
-		// fPrev = fieldstart - fieldSizeProd[d]+(d-1);
-
 		sNext = start + sizeProd[d];
 		sPrev = start - sizeProd[d];
 
@@ -2387,8 +2369,6 @@ void neApplyObjVel(PincObject *obj, Grid *V)
 		s = start;
 		f = fieldstart + (d - 1);
 
-		// PVal[fPrev] is a scalar not field
-		// printf("\n \n");
 		for (int g = start; g < end; g++)
 		{
 
@@ -2408,11 +2388,9 @@ void neApplyObjVel(PincObject *obj, Grid *V)
 								if ((obj->lookupInterior[b2]) == sNext)
 								{
 									nextInside = true;
-									// printf("setting val \n");
 								}
 								if ((obj->lookupInterior[b2]) == sPrev)
 								{
-									// printf("setting val");
 									prevInside = true;
 								}
 							}
@@ -2425,11 +2403,9 @@ void neApplyObjVel(PincObject *obj, Grid *V)
 								if ((obj->lookupSurface[b2]) == sNext)
 								{
 									nextInside = true;
-									// printf("setting val \n");
 								}
 								if ((obj->lookupSurface[b2]) == sPrev)
 								{
-									// printf("setting val");
 									prevInside = true;
 								}
 							}
@@ -2439,13 +2415,6 @@ void neApplyObjVel(PincObject *obj, Grid *V)
 							if (prevInside == false)
 							{
 								val[f] = -1. * sqrt(val[fPrev] * val[fPrev]);
-								// long int gridpos[3];
-								// long int gridposPrev[3];
-								// long int gridposNext[3];
-								// neIndexToPos3D(obj->domain,g,gridpos);
-								// neIndexToPos3D(obj->domain,sPrev,gridposPrev);
-								// neIndexToPos3D(obj->domain,sNext,gridposNext);
-								// printf("in dim %i for node %li,%li,%li, using prev=%li,%li,%li, next=%li,%li,%li, \n",d,gridpos[0],gridpos[1],gridpos[2],gridposPrev[0],gridposPrev[1],gridposPrev[2],gridposNext[0],gridposNext[1],gridposNext[2]);
 							}
 						}
 						if (prevInside == true)
@@ -2458,15 +2427,12 @@ void neApplyObjVel(PincObject *obj, Grid *V)
 					}
 				}
 			}
-			// exit(0);
 			fNext += rank - 1;
 			fPrev += rank - 1;
 			sNext++;
 			sPrev++;
 			s++; // fNext;
 			f += rank - 1;
-			// printf("IEVal[g] = %f, rhoVal[g] = %f \n",IEVal[g],rhoVal[g] );
-			// printf("%f, %f \n",PVal[sPrev], bulkVVal[fPrev]  );
 			if (g > sizeProd[rank])
 			{
 				msg(ERROR, "index out of bounds in neInternalEnergySolve");
@@ -2475,30 +2441,21 @@ void neApplyObjVel(PincObject *obj, Grid *V)
 			{
 				msg(ERROR, "index out of bounds in neInternalEnergySolve, index: %li max: %li, scalar index: %li", fNext, fieldSizeProd[rank], s);
 			}
-			// printf("node: %li, using %li, and %li \n",g,fNext,fPrev);
-			// printf("fieldSizeProd = %li, scalarsizeProd = %li \n \n",fieldSizeProd[4],sizeProd[4]);
 		}
 	}
-	// exit(0);
 }
 
 void neApplyObjI(PincObject *obj, Grid *IE)
 {
-
-	// neInternalEnergySolve(IE,P,bulkV,rhoNeutral,neutralPop);
 	double *val = IE->val;
-	// int nDims = pop->nDims;
 
 	int rank = obj->domain->rank;
 	long int *lookupSurfOff = obj->lookupSurfaceOffset;
 	long int *lookupIntOff = obj->lookupInteriorOffset;
 	long int *sizeProd = obj->domain->sizeProd;
 
-	// int index = 0;
-	// printf("sizeProd[1] = %i, %i, %i, %i \n",sizeProd[1],sizeProd[2],sizeProd[3],sizeProd[4]);
 	long int sNext, sPrev;
 	long int s;
-	// int fNext = fieldSizeProd[1];
 
 	long int start = alSum(&sizeProd[1], rank - 1);
 	long int end = sizeProd[rank] - start;
@@ -2512,8 +2469,6 @@ void neApplyObjI(PincObject *obj, Grid *IE)
 
 		s = start;
 
-		// PVal[fPrev] is a scalar not field
-		// printf("\n \n");
 		for (int g = start; g < end; g++)
 		{
 
@@ -2523,18 +2478,6 @@ void neApplyObjI(PincObject *obj, Grid *IE)
 				{
 					if ((obj->lookupSurface[b]) == g)
 					{
-						// for (long int a2=0; a2<obj->nObjects; a2++) {
-						// 	for (long int b2=lookupIntOff[a2]; b2<lookupIntOff[a2+1]; b2++) {
-						// 		if ((obj->lookupInterior[b2])==sNext) {
-						// 			val[sNext] = 20*val[sPrev];
-						// 			//printf("setting val \n");
-						// 		}
-						// 		if ((obj->lookupInterior[b2])==sPrev) {
-						// 			val[sPrev] = 20*val[sNext];
-						// 			//printf("setting val");
-						// 		}
-						// 	}
-						// }
 						prevInside = false;
 						nextInside = false;
 						for (long int a2 = 0; a2 < obj->nObjects; a2++)
@@ -2545,11 +2488,9 @@ void neApplyObjI(PincObject *obj, Grid *IE)
 								if ((obj->lookupInterior[b2]) == sNext)
 								{
 									nextInside = true;
-									// printf("setting val \n");
 								}
 								if ((obj->lookupInterior[b2]) == sPrev)
 								{
-									// printf("setting val");
 									prevInside = true;
 								}
 							}
@@ -2562,11 +2503,9 @@ void neApplyObjI(PincObject *obj, Grid *IE)
 								if ((obj->lookupSurface[b2]) == sNext)
 								{
 									nextInside = true;
-									// printf("setting val \n");
 								}
 								if ((obj->lookupSurface[b2]) == sPrev)
 								{
-									// printf("setting val");
 									prevInside = true;
 								}
 							}
@@ -2576,13 +2515,6 @@ void neApplyObjI(PincObject *obj, Grid *IE)
 							if (prevInside == false)
 							{
 								val[s] = val[sPrev];
-								// long int gridpos[3];
-								// long int gridposPrev[3];
-								// long int gridposNext[3];
-								// neIndexToPos3D(obj->domain,g,gridpos);
-								// neIndexToPos3D(obj->domain,sPrev,gridposPrev);
-								// neIndexToPos3D(obj->domain,sNext,gridposNext);
-								// printf("in dim %i for node %li,%li,%li, using prev=%li,%li,%li, next=%li,%li,%li, \n",d,gridpos[0],gridpos[1],gridpos[2],gridposPrev[0],gridposPrev[1],gridposPrev[2],gridposNext[0],gridposNext[1],gridposNext[2]);
 							}
 						}
 						if (prevInside == true)
@@ -2595,32 +2527,21 @@ void neApplyObjI(PincObject *obj, Grid *IE)
 					}
 				}
 			}
-			// exit(0);
 
 			sNext++;
 			sPrev++;
 			s++; // fNext;
 
-			// printf("IEVal[g] = %f, rhoVal[g] = %f \n",IEVal[g],rhoVal[g] );
-			// printf("%f, %f \n",PVal[sPrev], bulkVVal[fPrev]  );
 			if (g > sizeProd[rank])
 			{
 				msg(ERROR, "index out of bounds in neInternalEnergySolve");
 			}
-			// printf("node: %li, using %li, and %li \n",g,fNext,fPrev);
-			// printf("fieldSizeProd = %li, scalarsizeProd = %li \n \n",fieldSizeProd[4],sizeProd[4]);
 		}
 	}
-	// exit(0);
 }
 
 void nuObjectpurge(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj)
 {
-
-	// int rank = mpiInfo->mpiRank;
-	// int size = mpiInfo->mpiSize;
-
-	// double *val = rhoObj->val;
 	long int *sizeProd = rhoObj->sizeProd;
 	long int nDims = pop->nDims;
 
@@ -2640,7 +2561,6 @@ void nuObjectpurge(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj)
 		{
 
 			double *pos = &pop->pos[i * nDims];
-			// double *vel = &pop->vel[i*nDims];
 
 			// Integer parts of position
 			int j = (int)pos[0];
@@ -2649,20 +2569,14 @@ void nuObjectpurge(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj)
 
 			long int p = j + k * sizeProd[2] + l * sizeProd[3];
 			long int pIndex = i * nDims; // j + k*sizeProd[2] + l*sizeProd[3];
-			// msg(STATUS,"i, pIndex: %li,%i",(i-iStart),(pIndex-iStart*nDims));
-			//  Check whether p is one of the object nodes and collect the charge if so.
 			for (long int a = 0; a < obj->nObjects; a++)
 			{
 				for (long int b = lookupIntOff[a]; b < lookupIntOff[a + 1]; b++)
 				{
 					if ((obj->lookupInterior[b]) == p)
 					{
-						// msg(STATUS,"p, pIndex: %li,%li, %li",p,(pIndex-iStart*nDims),(iStop-iStart));
-						// msg(STATUS,"j,k,l: %i,%i, %i",j,k,l);
-						// msg(STATUS,"j,k,l: %f,%f,%f",pos[0],pos[1],pos[2]);
 						neCutParticle(pop, s, pIndex, pop->pos, pop->vel);
 						cutNumber += 1;
-						// msg(STATUS,"iStop = %li",iStop);
 						iStop--;
 					}
 				}
@@ -2673,12 +2587,8 @@ void nuObjectpurge(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj)
 				{
 					if ((obj->lookupSurface[b]) == p)
 					{
-						// msg(STATUS,"p, pIndex: %li,%li, %li",p,(pIndex-iStart*nDims),(iStop-iStart));
-						// msg(STATUS,"j,k,l: %i,%i, %i",j,k,l);
-						// msg(STATUS,"j,k,l: %f,%f,%f",pos[0],pos[1],pos[2]);
 						neCutParticle(pop, s, pIndex, pop->pos, pop->vel);
 						cutNumber += 1;
-						// msg(STATUS,"iStop = %li",iStop);
 						iStop--;
 					}
 				}
@@ -2693,18 +2603,12 @@ void nuObjectpurge(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj)
 
 void nuObjectCollide(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj)
 {
-
-	// int rank = mpiInfo->mpiRank;
-	// int size = mpiInfo->mpiSize;
-
-	// double *val = rhoObj->val;
 	long int *sizeProd = rhoObj->sizeProd;
 	long int nDims = pop->nDims;
 
 	int nSpecies = pop->nSpeciesNeutral;
 
 	long int *lookupIntOff = obj->lookupInteriorOffset;
-	// long int *lookupSurfOff = obj->lookupSurfaceOffset;
 
 	int cutNumber = 0;
 	for (int s = 0; s < nSpecies; s++)
@@ -2725,12 +2629,6 @@ void nuObjectCollide(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj)
 			int l = (int)pos[2];
 
 			long int p = j + k * sizeProd[2] + l * sizeProd[3];
-			// long int pIndex = i*nDims; //j + k*sizeProd[2] + l*sizeProd[3];
-			// msg(STATUS,"i, pIndex: %li,%i",(i-iStart),(pIndex-iStart*nDims));
-			//  Check whether p is one of the object nodes and collect the charge if so.
-			//  for (long int a=0; a<obj->nObjects; a++) {
-			//  	for (long int b=lookupSurfOff[a]; b<lookupSurfOff[a+1]; b++) {
-			//  		if ((obj->lookupSurface[b])==p) {
 
 			for (long int a = 0; a < obj->nObjects; a++)
 			{
@@ -2738,21 +2636,8 @@ void nuObjectCollide(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj)
 				{
 					if ((obj->lookupInterior[b]) == p)
 					{
-						// msg(STATUS,"j,p, pIndex: %i, %li,%li, %li",j,p,(pIndex-iStart*nDims),(iStop-iStart));
-						// msg(STATUS,"j,k,l: %i,%i, %i",j,k,l);
-						// msg(STATUS,"j,k,l: %f,%f,%f",pos[0],pos[1],pos[2]);
-
-						// printf("Before: pos = %f,%f,%f \n",pos[0],pos[1],pos[2]);
-						// printf("Before: vel = %f,%f,%f \n",vel[0],vel[1],vel[2]);
-
 						neScatterParticle(pop, pos, vel);
-
-						// printf("After: pos = %f,%f,%f \n",pos[0],pos[1],pos[2]);
-						// printf("After: vel = %f,%f,%f \n",vel[0],vel[1],vel[2]);
-						// printf("\n");
-
 						cutNumber += 1;
-						// msg(STATUS,"iStop = %li",iStop);
 						iStop--;
 
 						// Unit testing
@@ -2789,37 +2674,18 @@ void nuObjectCollide(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj)
 
 void nuObjectSetVal(Grid *rho, double constant, PincObject *obj)
 {
-
-	// int rank = mpiInfo->mpiRank;
-	// int size = mpiInfo->mpiSize;
-
-	// double *val = rhoObj->val;
 	double *rhoVal = rho->val;
 
-	// long int *sizeProd = rhoObj->sizeProd;
-
 	long int *lookupIntOff = obj->lookupInteriorOffset;
-	// long int *lookupSurfOff = obj->lookupSurfaceOffset;
 
-	// adPrint(rhoVal,rho->sizeProd[4]);
-	// msg(STATUS,"i, pIndex: %li,%i",(i-iStart),(pIndex-iStart*nDims));
 	//  Check whether p is one of the object nodes and collect the charge if so.
 	for (long int a = 0; a < obj->nObjects; a++)
 	{
 		for (long int b = lookupIntOff[a]; b < lookupIntOff[a + 1]; b++)
 		{
 			rhoVal[obj->lookupInterior[b]] = constant;
-			// printf("rhoVal[obj->lookupInterior[b]] = %f \n",rhoVal[obj->lookupInterior[b]] );
 		}
 	}
-	// for (long int a=0; a<obj->nObjects; a++) {
-	// 	for (long int b=lookupSurfOff[a]; b<lookupSurfOff[a+1]; b++) {
-	// 		rhoVal[obj->lookupSurface[b]] = constant;
-	// 		//printf("obj->lookupSurfOff[b]= %li \n",obj->lookupSurface[b]);
-	// 	}
-	// }
-	// adPrint(rhoVal,rho->sizeProd[4]);
-	// exit(0);
 }
 
 void neVelAssertMax(const NeutralPopulation *pop, double max)
