@@ -2511,6 +2511,7 @@ funPtr oCollMode_set(){ //dictionary *ini
 
 static void neutTest(dictionary *ini){
 
+	msg(STATUS," Neutral test initiated");
 	/*
 	 * SELECT METHODS
 	 */
@@ -2551,7 +2552,7 @@ static void neutTest(dictionary *ini){
 	void *(*solverAlloc)() = NULL;
 	void (*solverFree)() = NULL;
 	solverInterface(&solve, &solverAlloc, &solverFree);
-
+	msg(STATUS," Solver interface selected");
 	/*
 	 * INITIALIZE PINC VARIABLES
 	 */
@@ -2560,6 +2561,7 @@ static void neutTest(dictionary *ini){
 	mccNormalize(ini,units);
 
 	MpiInfo *mpiInfoNeut = gAllocMpi(ini);
+	msg(STATUS," MPI info allocated");
 
 	//MccVars *mccVars=mccAlloc(ini,units);
 
@@ -2582,19 +2584,21 @@ static void neutTest(dictionary *ini){
 	gZero(Itilde);
    	gZero(Vtilde);
 
-	PincObject *obj =objoAlloc(ini,mpiInfoNeut,units);              // for capMatrix - objects
+	msg(STATUS," Grids allocated");
+
+	PincObject *obj = objoAlloc(ini,mpiInfoNeut,units);              // for capMatrix - objects
 
 
     // for SPH neutrals
 	gCreateNeighborhood(ini, mpiInfoNeut, rhoNeutral);
     // We assume same form on neutral density grid and charged density grid
-
+	msg(STATUS," Neighbourhood created");
 
     // need for SPH neutrals a function
 
 	neSetBndSlices( IE, mpiInfoNeut);
 	neSetBndSlicesVel(ini, V, mpiInfoNeut);
-
+	msg(STATUS," Slices set up");
 
 	// Random number seeds
 	gsl_rng *rngSync = gsl_rng_alloc(gsl_rng_mt19937);
@@ -2614,7 +2618,7 @@ static void neutTest(dictionary *ini){
 	gOpenH5(ini, V,   mpiInfoNeut, units, units->velocity, "V");
 	//gOpenH5(ini, gradBulkV,   mpiInfoNeut, units, units->velocity, "gradBulkV");
 
-
+	msg(STATUS," H5 files opened");
 
 	// Add more time series to history if you want
 	// xyCreateDataset(history,"/group/group/dataset");
@@ -2631,7 +2635,7 @@ static void neutTest(dictionary *ini){
 	//neVelMaxwell(ini, neutralPop, rng);
 	neVelDrift(ini, neutralPop);
 	double maxVel = iniGetDouble(ini,"population:maxVel");
-
+	msg(STATUS," Neutral positions and velocities set");
 	//int nSpecies = neutralPop->nSpeciesNeutral;
 	//double *velThermal = iniGetDoubleArr(ini,"collisions:thermalVelocityNeutrals",nSpecies);
 
@@ -2675,7 +2679,7 @@ static void neutTest(dictionary *ini){
 	// SPH neutrals
 	nePurgeGhost(neutralPop, rhoNeutral);
 	neFillGhost(ini,neutralPop,rngSync,mpiInfoNeut);
-
+	msg(STATUS," Ghost layers processed");
 	/*
 	 * INITIALIZATION (E.g. half-step)
 	 */
@@ -2690,6 +2694,7 @@ static void neutTest(dictionary *ini){
 	gHaloOp(addSlice, V, mpiInfoNeut, FROMHALO);
 	nuGBndVel(V,mpiInfoNeut);
 	gHaloOp(setSlice, V, mpiInfoNeut, TOHALO);
+	msg(STATUS," Halo operations performed");
 
 	//gCopy(V, Vtilde);
 
@@ -2718,6 +2723,8 @@ static void neutTest(dictionary *ini){
 	neMultiplySlice(IE,(int)(trueSize[0]/2)-1,sliceDim,multiplyIEBy, neutralPop);
 	neMultiplySlice(IE,(int)(trueSize[0]/2),sliceDim,multiplyIEBy, neutralPop);
 	neMultiplySlice(IE,(int)(trueSize[0]/2)+1,sliceDim,multiplyIEBy, neutralPop);
+
+	msg(STATUS," Slice operations performed");
 	//gCopy(IE, Itilde);
 	//nuGBndVel(I,mpiInfoNeut);
 
@@ -2760,6 +2767,8 @@ static void neutTest(dictionary *ini){
 	gWriteH5(P, mpiInfoNeut, (double) 0);
 	gWriteH5(V, mpiInfoNeut, (double) 0);
 
+	msg(STATUS," Data written into H5 files");
+
 	// Compute pressure gradient SPH neutrals
 	//gFinDiff1st(P, Pgrad);
 	//gHaloOp(setSlice, Pgrad, mpiInfoNeut, TOHALO);
@@ -2793,6 +2802,8 @@ static void neutTest(dictionary *ini){
 	// n should start at 1 since that's the timestep we have after the first
 	// iteration (i.e. when storing H5-files).
 	int nTimeSteps = iniGetInt(ini,"time:nTimeSteps");
+
+	msg(STATUS," Main loop reached");
 	for(int n = 1; n <= nTimeSteps; n++){
 
 		//printf("\n");
