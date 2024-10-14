@@ -88,6 +88,9 @@ if __name__ == "__main__":
     if mode == 1:
         space = addLangmuirProbes(space, length, front_x)
 
-
+    # Python and C have different conventions for the order of axes
+    space = space.swapaxes(0, 2)
     file = h5py.File(filename, "w")
     file.create_dataset("Object", data=space, dtype="int32")
+    file.flush()
+    file.close()
