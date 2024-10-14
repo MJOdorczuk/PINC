@@ -44,6 +44,7 @@ int main(int argc, char *argv[]){
 												oMode_set,
 											    oCollMode_set,
 												neutTest_set);
+	msg(STATUS, "%s mode selected.", iniGetStr(ini,"methods:mode"));
 	run(ini);
 
 	/*
@@ -291,7 +292,7 @@ static void regular(dictionary *ini){
 		pWriteEnergy(history,pop,(double)n,units);
 	}
 
-	//if(mpiInfo->mpiRank==0) 
+	//if(mpiInfo->mpiRank==0)
 	tMsg(t->total, "Time spent: ");
 
 	/*
@@ -587,7 +588,7 @@ void BorisTestMode(dictionary *ini){
 	msg(STATUS, "x in [%f, %f]", x_min, x_max);
 	msg(STATUS, "y in [%f, %f]", y_min, y_max);
 
-	//if(mpiInfo->mpiRank==0) 
+	//if(mpiInfo->mpiRank==0)
 	tMsg(t->total, "Time spent: ");
 
 	/*
