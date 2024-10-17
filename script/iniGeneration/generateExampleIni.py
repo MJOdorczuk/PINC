@@ -76,7 +76,7 @@ def generatePopulationPart(
         # density of the particles in m^-3(todo: check the unit and specific purpose)
         density = [5.8977e9, 5.8977e9],
         # drift of the particles in m/s(todo: check the unit)
-        drift = [11492, 0, 0, 11492, 0, 0],
+        drift = [0, 0, 0, 0, 0, 0],
         # amplitude of the perturbation of the particles in m(todo: check the unit and specific purpose)
         perturbAmplitude = [1e-5, 0, 0, 0, 0, 0],
         # mode of the perturbation of the particles(todo: check the specific purpose)
@@ -112,7 +112,7 @@ def generateMethodsPart(
         # migration method
         migrate = "puExtractEmigrants3DOpen",
         # Monte Carlo Collision method(todo: verify the options)
-        mcc = "mccFunctionalCrossect"
+        mcc = "mccConstCrossect"
         ):
     return f'''[methods]
 mode                    = {collisionMode}
@@ -208,7 +208,7 @@ def generateCollisionsPart(
         # Mass of the neutral species in kg(todo: check the unit)
         neutralMass = 1.6724828e-27,
         # Drift of the neutral species in m/s(todo: check the unit)
-        neutralDrift = [11492, 0, 0],
+        neutralDrift = [0, 0, 0],
         # Number density of the neutral species in m^-3(todo: check the unit)
         numberDensityNeutrals = 5.8977e9,
         # Thermal velocity of the neutral species in m/s(todo: check the unit)
@@ -256,6 +256,7 @@ if __name__ == "__main__":
     import h5py
     import sys
 
+    drift = [11492, 0, 0]
 
     if len(sys.argv) > 4:
         with h5py.File(sys.argv[1], "r") as objectFile:
@@ -272,11 +273,11 @@ if __name__ == "__main__":
 {generateTimePart()}
 {generateGridPart(nSubdomains=[int(nx), int(ny), int(nz)], domainSize=[x, y, z])}
 {generateFieldsPart()}
-{generatePopulationPart()}
+{generatePopulationPart(drift=drift+drift)}
 {generateMethodsPart()}
 {generateMultigridPart()}
 {generateObjectPart()}
-{generateCollisionsPart()}
+{generateCollisionsPart(neutralDrift=drift)}
 '''
     with open("input.ini", "w") as f:
         f.write(iniContent)

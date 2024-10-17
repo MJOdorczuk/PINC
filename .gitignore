@@ -42,3 +42,5 @@ PINC*.out
 object_files/**
 script/plot/lobes/**
 *.log
+tmp.*
+temp.*
