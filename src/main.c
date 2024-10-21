@@ -13,6 +13,7 @@
 #include "spectral.h"
 #include "object.h"
 #include "collisions.h"
+#include <math.h>
 
 static void regular(dictionary *ini);
 funPtr regular_set(dictionary *ini){ return regular; }
@@ -45,6 +46,16 @@ int main(int argc, char *argv[]){
 											    oCollMode_set,
 												neutTest_set);
 	msg(STATUS, "%s mode selected.", iniGetStr(ini,"methods:mode"));
+	int nSpecies = iniGetInt(ini, "population:nSpecies");
+	double *vths = iniGetDoubleArr(ini, "population:thermalVelocity",nSpecies);
+	double *qs = iniGetDoubleArr(ini, "population:charge", nSpecies);
+	double *ms = iniGetDoubleArr(ini, "population:mass", nSpecies);
+	double *ns = iniGetDoubleArr(ini, "population:density", nSpecies);
+	double epsilon0 = 8.8541878188e-12;
+	double lambda = vths[0] * sqrt(epsilon0 * ms[0] / (ns[0] * qs[0] * qs[0]));
+	double step = iniGetDouble(ini, "grid:stepSize");
+	msg(STATUS, "Debye length estimated to be %.5f m for step size of %.5f", lambda, step);
+
 	run(ini);
 
 	/*
