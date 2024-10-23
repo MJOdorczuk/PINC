@@ -256,7 +256,7 @@ if __name__ == "__main__":
     import h5py
     import sys
 
-    drift = [11492, 0, 0]
+    drift = [7800, 0, 0]
 
     if len(sys.argv) > 4:
         with h5py.File(sys.argv[1], "r") as objectFile:
@@ -270,11 +270,11 @@ if __name__ == "__main__":
 ;
 {generateFilesPart()}
 {generateMsgfilesPart()}
-{generateTimePart()}
+{generateTimePart(timesteps=1000)}
 {generateGridPart(nSubdomains=[int(nx), int(ny), int(nz)], domainSize=[x, y, z])}
 {generateFieldsPart()}
-{generatePopulationPart(drift=drift+drift)}
-{generateMethodsPart()}
+{generatePopulationPart(nParticles=4, drift=drift+drift)}
+{generateMethodsPart(collisionMode="oCollCustomRhoMode")}
 {generateMultigridPart()}
 {generateObjectPart()}
 {generateCollisionsPart(neutralDrift=drift)}

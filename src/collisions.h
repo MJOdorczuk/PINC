@@ -43,6 +43,8 @@ typedef struct{
 //void neutTest(dictionary *ini);
 funPtr neutTest_set();
 
+funPtr oCollCustomRhoMode_set();
+
 //void oCollMode(dictionary *ini);
 funPtr oCollMode_set();
 

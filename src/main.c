@@ -38,6 +38,7 @@ int main(int argc, char *argv[]){
 	 */
 	void (*run)() = select(ini,"methods:mode",	regular_set,
 												mccMode_set,
+												oCollCustomRhoMode_set,
 												BorisTestMode_set,
 												mgMode_set,
 												mgModeErrorScaling_set,
