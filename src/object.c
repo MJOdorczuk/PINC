@@ -1044,9 +1044,7 @@ void oSweepBiasSin( PincObject *obj, int nt ){
 PincObject *objoAlloc(const dictionary *ini, const MpiInfo *mpiInfo, Units *units){
 
     int size = mpiInfo->mpiSize;
-    //int mpiRank = mpiInfo->mpiRank;
     Grid *domain = gAlloc(ini, SCALAR,mpiInfo);
-    //int rank = domain->rank;
     gZero(domain);
 
     PincObject *obj = malloc(sizeof(*obj));
@@ -1056,12 +1054,7 @@ PincObject *objoAlloc(const dictionary *ini, const MpiInfo *mpiInfo, Units *unit
 	oReadH5(obj);
     //oCloseH5(obj);
     //Communicate the boundary nodes
-		gHaloOp(setSlice, obj->domain, mpiInfo, TOHALO);
-
-
-    //obj->nObjects
-    //obj->lookupInterior
-    //obj->lookupInteriorOffset
+    gHaloOp(setSlice, obj->domain, mpiInfo, TOHALO);
 
     // Find the number of objects in the input file
     int nObjects = 0;
@@ -1074,7 +1067,6 @@ PincObject *objoAlloc(const dictionary *ini, const MpiInfo *mpiInfo, Units *unit
     }
     // Make sure each process knows the total number of objects.
     MPI_Allreduce(MPI_IN_PLACE, &nObjects, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-    //msg(WARNING|ALL,"nObjects: %i",nObjects);
 
     obj->nObjects = nObjects;
 
@@ -1090,7 +1082,6 @@ PincObject *objoAlloc(const dictionary *ini, const MpiInfo *mpiInfo, Units *unit
 	}
 
     double *capMatrixSum = malloc(obj->nObjects*sizeof(*capMatrixSum));
-    //long int *capMatrixAllOffsets = malloc(obj->nObjects*(size+1)*sizeof(*capMatrixAllOffsets));
 
     long int capMatrixAllSize = oGatherSurfaceNodes(obj,nodCorLoc,nodCorGlob,obj->lookupSurfaceOffset,mpiInfo);
 
@@ -1102,52 +1093,40 @@ PincObject *objoAlloc(const dictionary *ini, const MpiInfo *mpiInfo, Units *unit
 	double *rhoCorr = malloc(capMatrixAllSize*sizeof(*rhoCorr));
 
 	double *invNrSurfNod = malloc(obj->nObjects*sizeof(*invNrSurfNod));
-    // for (long int a=0; a<obj->nObjects; a++) {
-    //     invNrSurfNod[a] = 1.0/(nodCorGlob[(a+1)*(size)]);
-    //     //printf("invNrSurfNod[a] = %f, nodCorGlob[(a+1)*(size+1)] = %li",invNrSurfNod[a],nodCorGlob[(a+1)*(size)]);
-    // }
 
-
-
-  int nSpecies = iniGetInt(ini,"population:nSpecies");
-  double *objectCurrent= malloc(nSpecies*nObjects*sizeof(*objectCurrent));
-  bool biasOn = iniGetInt(ini,"object:biasOn");
-  bool sweepOn = iniGetInt(ini,"object:sweepOn");
-  double *bias = iniGetDoubleArr(ini,"object:bias",nObjects);
-  adScale(bias, nObjects, 1./units->potential);
-  double *origBias = iniGetDoubleArr(ini,"object:bias",nObjects);
-  adScale(origBias, nObjects, 1./units->potential);
-  double sweepTime = iniGetDouble(ini,"object:sweepTime");
-  sweepTime = sweepTime/units->time;
-  double sweepRange= iniGetDouble(ini,"object:sweepRange");
-  sweepRange /= units->potential;
-  //sweepRange /= 2;
-  double sweepOffset= iniGetDouble(ini,"object:sweepOffset");
-  sweepOffset /= units->potential;
-  double sweepStart = iniGetDouble(ini,"object:sweepStart");
-  sweepStart /= units->time;
-  double sweepSteps = iniGetInt(ini,"object:sweepSteps");
-  //double sweepEnd = iniGetDouble(ini,"object:sweepEnd");
-  //sweepEnd /= units->time;
-  //printf("bias=%f\n",bias[0] );
-  //exit(0);
-  obj->biasOn = biasOn;
-  obj->sweepOn = sweepOn;
-  obj->bias = bias;
-  obj->origBias = origBias;
+    int nSpecies = iniGetInt(ini,"population:nSpecies");
+    double *objectCurrent= malloc(nSpecies*nObjects*sizeof(*objectCurrent));
+    bool biasOn = iniGetInt(ini,"object:biasOn");
+    bool sweepOn = iniGetInt(ini,"object:sweepOn");
+    double *bias = iniGetDoubleArr(ini,"object:bias",nObjects);
+    adScale(bias, nObjects, 1./units->potential);
+    double *origBias = iniGetDoubleArr(ini,"object:bias",nObjects);
+    adScale(origBias, nObjects, 1./units->potential);
+    double sweepTime = iniGetDouble(ini,"object:sweepTime");
+    sweepTime = sweepTime/units->time;
+    double sweepRange= iniGetDouble(ini,"object:sweepRange");
+    sweepRange /= units->potential;
+    double sweepOffset= iniGetDouble(ini,"object:sweepOffset");
+    sweepOffset /= units->potential;
+    double sweepStart = iniGetDouble(ini,"object:sweepStart");
+    sweepStart /= units->time;
+    double sweepSteps = iniGetInt(ini,"object:sweepSteps");
+    obj->biasOn = biasOn;
+    obj->sweepOn = sweepOn;
+    obj->bias = bias;
+    obj->origBias = origBias;
     obj->capMatrixAll = capMatrixAll;
     obj->capMatrixAllOffsets = nodCorGlob;
     obj->capMatrixSum = capMatrixSum;
 	obj->deltaPhi = deltaPhi;
 	obj->rhoCorr = rhoCorr;
 	obj->invNrSurfNod = invNrSurfNod;
-  obj->objectCurrent= objectCurrent;
-  obj->sweepTime=sweepTime;
-  obj->sweepRange=sweepRange;
-  obj->sweepOffset=sweepOffset;
-  //obj->sweepEnd=sweepEnd;
-  obj->sweepStart=sweepStart;
-  obj->sweepSteps=sweepSteps;
+    obj->objectCurrent = objectCurrent;
+    obj->sweepTime = sweepTime;
+    obj->sweepRange = sweepRange;
+    obj->sweepOffset = sweepOffset;
+    obj->sweepStart = sweepStart;
+    obj->sweepSteps = sweepSteps;
 
 
     free(nodCorLoc);
@@ -1169,8 +1148,8 @@ void oFree(PincObject *obj){
 	free(obj->rhoCorr);
 	free(obj->deltaPhi);
 	free(obj->invNrSurfNod);
-  free(obj->objectCurrent);
-  free(obj->bias);
+    free(obj->objectCurrent);
+    free(obj->bias);
     free(obj);
 
 }
