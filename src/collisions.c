@@ -21,6 +21,43 @@
 #include "pusher.h"
 #include "neutrals.h"
 
+/**
+ * @brief Selects methods for the collision module
+ */
+#define SELECT_METHODS(acc, distr, collide, extractEmigrants, solve, solverAlloc, solverFree)\
+	do { \
+	acc = select(ini, "methods:acc", 									\
+						   puAcc3D1_set, 									\
+						   puAcc3D1KE_set,									\
+						   puAccND1_set,									\
+						   puAccND1KE_set,									\
+						   puAccND0_set,									\
+						   puAccND0KE_set,									\
+						   puBoris3D1_set,									\
+						   puBoris3D1KE_set,								\
+	distr = select(ini, "methods:distr",						\
+								puDistr3D1split_set,						\
+								puDistr3D1_set,								\
+								puDistrND1_set,								\
+								puDistrND0_set);							\
+	collide = select(ini, "methods:mcc",						\
+								mccCollissionsOff_set,						\
+								mccConstCrossect_set,						\
+								mccConstFreq_set,							\
+								mccFunctionalCrossect_set);					\
+																			\
+	extractEmigrants = select(ini, "methods:migrate",			\
+											puExtractEmigrants3D_set,		\
+											puExtractEmigrantsND_set,		\
+											puExtractEmigrants3DOpen_set);	\
+																			\
+	void (*solverInterface)() = select(ini, "methods:poisson",			\
+										mgSolver_set						\
+										/* sSolver_set */					\
+		);																	\
+	solverInterface(&solve, &solverAlloc, &solverFree); \
+	} while(0)
+
 static void mccSanity(dictionary *ini, const char *name, int nSpecies)
 {
 	// check error, see vahedi + surendra p 181
@@ -1678,40 +1715,8 @@ static void mccMode(dictionary *ini)
 	/*
 	 * SELECT METHODS
 	 */
-	void (*acc)() = select(ini, "methods:acc", puAcc3D1_set,
-						   puAcc3D1KE_set,
-						   puAccND1_set,
-						   puAccND1KE_set,
-						   puAccND0_set,
-						   puAccND0KE_set,
-						   puBoris3D1_set,
-						   puBoris3D1KE_set,
-						   puBoris3D1KETEST_set);
-
-	void (*distr)() = select(ini, "methods:distr", puDistr3D1split_set,
-							 puDistr3D1_set,
-							 puDistrND1_set,
-							 puDistrND0_set);
-
-	void (*extractEmigrants)() = select(ini, "methods:migrate", puExtractEmigrants3D_set,
-										puExtractEmigrantsND_set);
-
-	void (*solverInterface)() = select(ini, "methods:poisson",
-									   mgSolver_set
-									   // sSolver_set
-	);
-
-	void (*collide)() = select(ini, "methods:mcc",
-							   mccCollissionsOff_set,
-							   mccConstCrossect_set,
-							   mccConstFreq_set,
-							   mccFunctionalCrossect_set);
-
-	//
-	void (*solve)() = NULL;
-	void *(*solverAlloc)() = NULL;
-	void (*solverFree)() = NULL;
-	solverInterface(&solve, &solverAlloc, &solverFree);
+	void (*acc)(), (*distr)(), (*collide)(), (*extractEmigrants)(), (*solve)(), (*solverFree)(), *(*solverAlloc)();
+	SELECT_METHODS(acc, distr, collide, extractEmigrants, solve, solverAlloc, solverFree);
 
 	/*
 	 * INITIALIZE PINC VARIABLES
@@ -2020,41 +2025,9 @@ static void oCollMode(dictionary *ini)
 	/*
 	 * SELECT METHODS
 	 */
-	void (*acc)() = select(ini, "methods:acc",
-						   puAcc3D1_set,
-						   puAcc3D1KE_set,
-						   puAccND1_set,
-						   puAccND1KE_set,
-						   puAccND0_set,
-						   puAccND0KE_set,
-						   puBoris3D1KETEST_set);
+	void (*acc)(), (*distr)(), (*collide)(), (*extractEmigrants)(), (*solve)(), (*solverFree)(), *(*solverAlloc)();
+	SELECT_METHODS(acc, distr, collide, extractEmigrants, solve, solverAlloc, solverFree);
 
-	void (*distr)() = select(ini, "methods:distr",
-							 puDistr3D1split_set,
-							 puDistr3D1_set,
-							 puDistrND1_set,
-							 puDistrND0_set);
-
-	void (*collide)() = select(ini, "methods:mcc",
-							   mccCollissionsOff_set,
-							   mccConstCrossect_set,
-							   mccConstFreq_set,
-							   mccFunctionalCrossect_set);
-
-	void (*extractEmigrants)() = select(ini, "methods:migrate",
-										puExtractEmigrants3D_set,
-										puExtractEmigrantsND_set,
-										puExtractEmigrants3DOpen_set);
-
-	void (*solverInterface)() = select(ini, "methods:poisson",
-									   mgSolver_set
-									   // sSolver_set
-	);
-
-	void (*solve)() = NULL;
-	void *(*solverAlloc)() = NULL;
-	void (*solverFree)() = NULL;
-	solverInterface(&solve, &solverAlloc, &solverFree);
 
 	/*
 	 * INITIALIZE PINC VARIABLES
