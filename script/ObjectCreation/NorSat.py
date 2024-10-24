@@ -1,6 +1,12 @@
-'''
-Script for generating object.grid.h5 files with NorSat-1 satellite model.
-'''
+"""
+** Script for generating object.grid.h5 files with NorSat-1 satellite model **
+
+@file                uniform.py
+@author              Michał Jan Odorczuk <michaljo@uio.no>
+@date                24.10.2024
+
+"""
+
 
 import h5py
 import numpy as np
@@ -73,7 +79,8 @@ if __name__ == "__main__":
         print("x, y, z - size of the simulation domain")
         print("length - length of the satellite in x-axis")
         print("front_x - x-coordinate of the front of the satellite")
-        print("mode: 0 - only the main body, 1 - main body and Langmuir probes")
+        print("mode: \n\t0 - only the main body, \n\t1 - main body and Langmuir probes")
+        print("\t2 - simple sphere")
         print("filename - relative path of the output file")
         sys.exit(1)
 
@@ -84,9 +91,12 @@ if __name__ == "__main__":
     filename = sys.argv[7]
 
     space = np.zeros((int(x), int(y), int(z)), dtype="int32")
-    space = addBody(space, length, front_x)
+    if mode == 0 or mode == 1:
+        space = addBody(space, length, front_x)
     if mode == 1:
         space = addLangmuirProbes(space, length, front_x)
+    if mode == 2:
+        space = addSphere(space, length, int(x) // 2 + front_x, int(y) // 2, int(z) // 2)
 
     # Python and C have different conventions for the order of axes
     space = space.swapaxes(0, 2)
