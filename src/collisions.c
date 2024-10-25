@@ -25,37 +25,37 @@
  * @brief Selects methods for the collision module
  */
 #define SELECT_METHODS(acc, distr, collide, extractEmigrants, solve, solverAlloc, solverFree)\
-	do { \
-	acc = select(ini, "methods:acc", 									\
-						   puAcc3D1_set, 									\
-						   puAcc3D1KE_set,									\
-						   puAccND1_set,									\
-						   puAccND1KE_set,									\
-						   puAccND0_set,									\
-						   puAccND0KE_set,									\
-						   puBoris3D1_set,									\
-						   puBoris3D1KE_set,								\
-						   puBoris3D1KETEST_set);							\
-	distr = select(ini, "methods:distr",						\
-								puDistr3D1split_set,						\
-								puDistr3D1_set,								\
-								puDistrND1_set,								\
-								puDistrND0_set);							\
-	collide = select(ini, "methods:mcc",						\
-								mccCollissionsOff_set,						\
-								mccConstCrossect_set,						\
-								mccConstFreq_set,							\
-								mccFunctionalCrossect_set);					\
-																			\
-	extractEmigrants = select(ini, "methods:migrate",			\
-											puExtractEmigrants3D_set,		\
-											puExtractEmigrantsND_set,		\
-											puExtractEmigrants3DOpen_set);	\
-																			\
-	void (*solverInterface)() = select(ini, "methods:poisson",			\
-										mgSolver_set						\
-										/* sSolver_set */					\
-		);																	\
+	do { 															\
+	acc = select(ini, "methods:acc", 								\
+						puAcc3D1_set, 								\
+						puAcc3D1KE_set,								\
+						puAccND1_set,								\
+						puAccND1KE_set,								\
+						puAccND0_set,								\
+						puAccND0KE_set,								\
+						puBoris3D1_set,								\
+						puBoris3D1KE_set,							\
+						puBoris3D1KETEST_set);						\
+	distr = select(ini, "methods:distr",							\
+						puDistr3D1split_set,						\
+						puDistr3D1_set,								\
+						puDistrND1_set,								\
+						puDistrND0_set);							\
+	collide = select(ini, "methods:mcc",							\
+							mccCollissionsOff_set,					\
+							mccConstCrossect_set,					\
+							mccConstFreq_set,						\
+							mccFunctionalCrossect_set);				\
+																	\
+	extractEmigrants = select(ini, "methods:migrate",				\
+									puExtractEmigrants3D_set,		\
+									puExtractEmigrantsND_set,		\
+									puExtractEmigrants3DOpen_set);	\
+																	\
+	void (*solverInterface)() = select(ini, "methods:poisson",		\
+											mgSolver_set			\
+											/* sSolver_set */		\
+		);															\
 	solverInterface(&solve, &solverAlloc, &solverFree); \
 	} while(0)
 
@@ -410,7 +410,7 @@ static inline double mccGetMyCollFreqFunctional(double (*sigma)(double, double, 
  *		Allocation mcc variables
  ************************************************/
 
-MccVars *mccAlloc(const dictionary *ini, const Units *units)
+MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiInfo)
 {
 	MccVars *mccVars = malloc(sizeof(*mccVars));
 	double pMaxElectron = 0;
@@ -458,12 +458,15 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units)
 	// msg(STATUS,"factor = %f",mccVars->energyConvFactor);
 	mccVars->electronEnergyMethod = iniGetStr(ini, "collisions:electronEnergyMethod");
 
+	mccVars->neutralField = pNeutralFieldAlloc(ini, mpiInfo);
+
 	free(mass);
 	return mccVars;
 }
 
 void mccFreeVars(MccVars *mccVars)
 {
+	pNeutralFieldFree(mccVars->neutralField);
 	free(mccVars);
 }
 
@@ -1743,7 +1746,7 @@ static void mccMode(dictionary *ini)
 	 * mcc specific variables
 	 */
 
-	MccVars *mccVars = mccAlloc(ini, units);
+	MccVars *mccVars = mccAlloc(ini, units, mpiInfo);
 
 	// using Boris algo
 	int nSpecies = pop->nSpecies;
@@ -2046,7 +2049,7 @@ static void oCollMode(dictionary *ini)
 	Grid *rhoObj = gAlloc(ini, SCALAR, mpiInfo); // for capMatrix - objects
 	Grid *phi = gAlloc(ini, SCALAR, mpiInfo);
 	void *solver = solverAlloc(ini, rho, phi, mpiInfo);
-	MccVars *mccVars = mccAlloc(ini, units);
+	MccVars *mccVars = mccAlloc(ini, units, mpiInfo);
 
 	PincObject *obj = objoAlloc(ini, mpiInfo, units); // for capMatrix - objects
 	// TODO: look into multigrid E,rho,rhoObj
@@ -2332,7 +2335,7 @@ static void oCollCustomRhoMode(dictionary *ini)
 	Grid *rhoObj = gAlloc(ini, SCALAR, mpiInfo); // for capMatrix - objects
 	Grid *phi = gAlloc(ini, SCALAR, mpiInfo);
 	void *solver = solverAlloc(ini, rho, phi, mpiInfo);
-	MccVars *mccVars = mccAlloc(ini, units);
+	MccVars *mccVars = mccAlloc(ini, units, mpiInfo);
 
 	PincObject *obj = objoAlloc(ini, mpiInfo, units); // for capMatrix - objects
 	// TODO: look into multigrid E,rho,rhoObj
@@ -2434,9 +2437,16 @@ static void oCollCustomRhoMode(dictionary *ini)
 	//- NEUTRALS - initialization
 	//-----------------------------------
 
-	Grid *rhoNeutral = gAlloc(ini, SCALAR, mpiInfo);
-	gZero(rhoNeutral);
-	gAdd(rhoNeutral, mccVars->nt);
+	gOpenH5(ini, mccVars->neutralField->rho, mpiInfo, units, 1, "rhoNeutral");
+	gReadH5(mccVars->neutralField->rho, 0.0);
+	gOpenH5(ini, mccVars->neutralField->vth, mpiInfo, units, units->velocity, "vthNeutral");
+	gReadH5(mccVars->neutralField->vth, 0.0);
+	char buffer[100];
+	for(int d = 0; d < mccVars->neutralField->nDims; d++) {
+		sprintf(buffer, "v%dNeutral", d);
+		gOpenH5(ini, mccVars->neutralField->vel[d], mpiInfo, units, units->velocity, buffer);
+		gReadH5(mccVars->neutralField->vel[d], 0.0);
+	}
 
 	//-----------------------------------
 	//- NEUTRALS - initialization - end
@@ -2487,7 +2497,7 @@ static void oCollCustomRhoMode(dictionary *ini)
 		 *   Collisions
 		 *   Changes velocity component of some particles, not position.
 		 */
-		collide(ini, rhoNeutral, pop, mccVars, rng, mpiInfo);
+		collide(ini, mccVars->neutralField->rho, pop, mccVars, rng, mpiInfo);
 
 		// Compute charge density
 		distr(pop, rho, rho_e, rho_i);

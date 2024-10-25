@@ -45,6 +45,13 @@ typedef struct{
 } NeutralPopulation;
 
 
+typedef struct{
+	Grid *rho; // neutral species density
+	Grid *vth; // neutral species thermal velocity
+	Grid **vel; // neutral species velocity
+	int nDims; // number of dimensions (TODO: is it not redundant?)
+} NeutralField;
+
 /**
  * @brief	Allocates memory for Neutral Population according to ini-file
  * @param	ini		Dictionary to input file
@@ -65,6 +72,18 @@ NeutralPopulation *pNeutralAlloc(const dictionary *ini,const MpiInfo *mpiInfo);
 void pNeutralFree(NeutralPopulation *pop);
 
 
+/**
+ * @brief					Allocates memory for neutral field
+ * @param[in]	ini			Dictionary to input file
+ * @param[in]	mpiInfo		Information about MPI
+ */
+NeutralField *pNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo);
+
+/**
+ * @brief					Frees memory for neutral field
+ * @param[in,out]	field	Pointer to field to be freed
+ */
+void pNeutralFieldFree(NeutralField *field);
 
  //#########################################
  // Distributer

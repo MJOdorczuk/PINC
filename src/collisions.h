@@ -36,13 +36,16 @@ typedef struct{
 	double energyConvFactor; // convert from PINC to eV
 	double *neutralDrift;
 	char *electronEnergyMethod;
-
+	NeutralField * neutralField;
 } MccVars;
 
 
 //void neutTest(dictionary *ini);
 funPtr neutTest_set();
 
+/**
+ * @brief Null collision method with predefined neutral species distribution
+ */
 funPtr oCollCustomRhoMode_set();
 
 //void oCollMode(dictionary *ini);
@@ -66,7 +69,7 @@ funPtr mccCollissionsOff_set(dictionary *ini);
  * ini, and units must exist and be initialized before this function.
  */
 
-MccVars *mccAlloc(const dictionary *ini, const Units *units);
+MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiInfo);
 
 
 //

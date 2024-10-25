@@ -588,6 +588,51 @@ void pNeutralFree(NeutralPopulation *pop)
 	free(pop);
 }
 
+NeutralField *pNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo)
+{
+	// Initialise the field object
+	NeutralField *field = malloc(sizeof(*field));
+	// Allocate the fields
+	field->rho = gAlloc(ini, SCALAR, mpiInfo);
+	field->vth = gAlloc(ini, SCALAR, mpiInfo);
+	// Todo: should we keep it n-dimensional or just 3D?
+	field->nDims = iniGetInt(ini, "grid:nDims");
+	field->vel = malloc(field->nDims * sizeof(Grid *));
+
+	// Set uniform density
+	double rho = iniGetDouble(ini, "collisions:numberDensityNeutrals"); // constant for now
+	gZero(field->rho);
+	gAdd(field->rho, rho);
+
+	// Set uniform thermal velocity
+	double vth = iniGetDouble(ini, "collisions:thermalVelocityNeutrals");
+	gZero(field->vth);
+	gAdd(field->vth, vth);
+
+	// Set uniform velocity
+	double *vel = iniGetDoubleArr(ini, "collisions:neutralDrift", field->nDims);
+	for (int d = 0; d < field->nDims; d++)
+	{
+		field->vel[d] = gAlloc(ini, SCALAR, mpiInfo);
+		gZero(field->vel[d]);
+		gAdd(field->vel[d], vel[d]);
+	}
+	return field;
+}
+
+void pNeutralFieldFree(NeutralField *field)
+{
+	gFree(field->rho);
+	gFree(field->vth);
+	for (int d = 0; d < field->nDims; d++)
+	{
+		gFree(field->vel[d]);
+	}
+	free(field->vel);
+	free(field);
+}
+
+
 void nePosLattice(const dictionary *ini, NeutralPopulation *pop, const MpiInfo *mpiInfo)
 {
 
