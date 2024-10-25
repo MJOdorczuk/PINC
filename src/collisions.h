@@ -175,7 +175,7 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiI
  * this call. In practice only a call to collide() should be necessary in the
  * main time loop, and the rest is defined in the input file.
  */
-void mccCollideElectronStatic(const dictionary *ini,Grid *rhoNeutral, Population *pop,
+void mccCollideElectronStatic(const dictionary *ini, Population *pop,
 	MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo);
 
 
@@ -192,7 +192,7 @@ void mccCollideElectronStatic(const dictionary *ini,Grid *rhoNeutral, Population
  * this call. In practice only a call to collide() should be necessary in the
  * main time loop, and the rest is defined in the input file.
  */
-void mccCollideIonStatic(const dictionary *ini,Grid *rhoNeutral, Population *pop,
+void mccCollideIonStatic(const dictionary *ini, Population *pop,
 	MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo);
 
 
@@ -209,9 +209,8 @@ void mccCollideIonStatic(const dictionary *ini,Grid *rhoNeutral, Population *pop
  * this call. In practice only a call to collide() should be necessary in the
  * main time loop, and the rest is defined in the input file.
  */
-void mccCollideElectronFunctional(const dictionary *ini,Grid *rhoNeutral, Population *pop,
-	MccVars *mccVars, const gsl_rng *rng,
-	MpiInfo *mpiInfo);
+void mccCollideElectronFunctional(const dictionary *ini, Population *pop,
+	MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo);
 
 
 /**
@@ -227,7 +226,7 @@ void mccCollideElectronFunctional(const dictionary *ini,Grid *rhoNeutral, Popula
  * this call. In practice only a call to collide() should be necessary in the
  * main time loop, and the rest is defined in the input file.
  */
-void mccCollideIonFunctional(const dictionary *ini,Grid *rhoNeutral, Population *pop,
+void mccCollideIonFunctional(const dictionary *ini, Population *pop,
 	MccVars *mccVars, const gsl_rng *rng,MpiInfo *mpiInfo);
 
 
@@ -246,8 +245,7 @@ void mccCollideIonFunctional(const dictionary *ini,Grid *rhoNeutral, Population 
  * main time loop, and the rest is defined in the input file.
  */
 void mccCollideElectronConstantFrq(const dictionary *ini, Population *pop,
-	MccVars *mccVars, const gsl_rng *rng,
-	MpiInfo *mpiInfo);
+	MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo);
 
 
 

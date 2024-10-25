@@ -582,7 +582,7 @@ static void mccGetPmaxElectronFunctional(const dictionary *ini,
 	}
 }
 
-static void mccGetPmaxIonStatic(const dictionary *ini, MccVars *mccVars, Grid *rhoNeutral,
+static void mccGetPmaxIonStatic(const dictionary *ini, MccVars *mccVars,
 								Population *pop, MpiInfo *mpiInfo, const gsl_rng *rng)
 {
 
@@ -590,7 +590,7 @@ static void mccGetPmaxIonStatic(const dictionary *ini, MccVars *mccVars, Grid *r
 	// to determine maximum collision probability
 
 	double NvelThermal = mccVars->NvelThermal;
-	double nt = mccGetMaxDens(rhoNeutral); // mccVars->nt;
+	double nt = mccGetMaxDens(mccVars->neutralField->rho);
 	double StaticSigmaCEX = mccVars->mccSigmaCEX;
 	double StaticSigmaIonElastic = mccVars->mccSigmaIonElastic;
 	double max_v = mccGetMaxVelTran(pop, 1, rng, NvelThermal, mccVars);
@@ -607,16 +607,16 @@ static void mccGetPmaxIonStatic(const dictionary *ini, MccVars *mccVars, Grid *r
 }
 
 static void mccGetPmaxElectronStatic(const dictionary *ini,
-									 MccVars *mccVars, Grid *rhoNeutral, Population *pop, MpiInfo *mpiInfo)
+									 MccVars *mccVars, Population *pop, MpiInfo *mpiInfo)
 {
 
 	// Faster static version. uses static cross sections
 	// to determine maximum collision probability
 
-	double nt = mccGetMaxDens(rhoNeutral); // mccVars->nt;//iniGetDouble(ini,"collisions:numberDensityNeutrals"); //constant for now
+	double nt = mccGetMaxDens(mccVars->neutralField->rho);
 
-	double StaticSigmaElectronElastic = mccVars->mccSigmaElectronElastic; // iniGetDouble(ini,"collisions:sigmaElectronElastic");
-	double max_v = mccGetMaxVel(pop, 0, mccVars);						  // 2.71828*thermalVel; // e*thermalVel, needs to be max_velocity
+	double StaticSigmaElectronElastic = mccVars->mccSigmaElectronElastic;
+	double max_v = mccGetMaxVel(pop, 0, mccVars);
 	// double min_v = mccGetMinVel(pop,0);
 	mccVars->maxFreqElectron = StaticSigmaElectronElastic * max_v * nt;
 	mccVars->pMaxElectron = 1 - exp(-(mccVars->maxFreqElectron));
@@ -897,15 +897,14 @@ static void scatterIon(double *vx_point, double *vy_point, double *vz_point,
 	}
 }
 
-void mccCollideElectronStatic(const dictionary *ini, Grid *rhoNeutral, Population *pop,
-							  MccVars *mccVars, const gsl_rng *rng,
-							  MpiInfo *mpiInfo)
+void mccCollideElectronStatic(const dictionary *ini, Population *pop,
+							  MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo)
 {
 
 	// uses static CROSS-Sections, collfreq is proportional to v
 	// msg(STATUS,"colliding Electrons");
 
-	mccGetPmaxElectronStatic(ini, mccVars, rhoNeutral, pop, mpiInfo);
+	mccGetPmaxElectronStatic(ini, mccVars, pop, mpiInfo);
 
 	double nt = 0; // mccVars->nt;
 	double mccSigmaElectronElastic = mccVars->mccSigmaElectronElastic;
@@ -949,7 +948,7 @@ void mccCollideElectronStatic(const dictionary *ini, Grid *rhoNeutral, Populatio
 		x = pos[q];
 		y = pos[q + 1];
 		z = pos[q + 2];
-		nt = mccGetLocalDens(x, y, z, rhoNeutral);
+		nt = mccGetLocalDens(x, y, z, mccVars->neutralField->rho);
 
 		vel[q] = vel[q] - drift[0];			// transform frames here
 		vel[q + 1] = vel[q + 1] - drift[1]; // to get correct collision frequency
@@ -1010,13 +1009,13 @@ void mccCollideElectronStatic(const dictionary *ini, Grid *rhoNeutral, Populatio
 	}
 }
 
-void mccCollideIonStatic(const dictionary *ini, Grid *rhoNeutral, Population *pop,
+void mccCollideIonStatic(const dictionary *ini, Population *pop,
 						 MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo)
 {
 
 	// uses static CROSS-Sections, collfreq is proportional to v
 
-	mccGetPmaxIonStatic(ini, mccVars, rhoNeutral, pop, mpiInfo, rng);
+	mccGetPmaxIonStatic(ini, mccVars, pop, mpiInfo, rng);
 
 	// printf("pmax = %f\n",mccVars->pMaxIon );
 	double nt = 0; // mccVars->nt;
@@ -1076,7 +1075,7 @@ void mccCollideIonStatic(const dictionary *ini, Grid *rhoNeutral, Population *po
 		x = pos[q];
 		y = pos[q + 1];
 		z = pos[q + 2];
-		nt = mccGetLocalDens(x, y, z, rhoNeutral);
+		nt = mccGetLocalDens(x, y, z, mccVars->neutralField->rho);
 
 		// transfer to neutral stationary frame
 		double vxTran = vel[q] - vxMW;
@@ -1145,7 +1144,7 @@ void mccCollideIonStatic(const dictionary *ini, Grid *rhoNeutral, Population *po
 	x = pos[q];
 	y = pos[q + 1];
 	z = pos[q + 2];
-	nt = mccGetLocalDens(x, y, z, rhoNeutral);
+	nt = mccGetLocalDens(x, y, z, mccVars->neutralField->rho);
 
 	double MyCollFreq1 = mccGetMyCollFreqStatic(mccSigmaIonElastic, vxTran,
 												vyTran, vzTran, nt);
@@ -1190,9 +1189,8 @@ void mccCollideIonStatic(const dictionary *ini, Grid *rhoNeutral, Population *po
 	}
 }
 
-void mccCollideElectronFunctional(const dictionary *ini, Grid *rhoNeutral, Population *pop,
-								  MccVars *mccVars, const gsl_rng *rng,
-								  MpiInfo *mpiInfo)
+void mccCollideElectronFunctional(const dictionary *ini, Population *pop,
+								  MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo)
 {
 
 	// uses static CROSS-Sections, collfreq is proportional to v
@@ -1280,7 +1278,7 @@ void mccCollideElectronFunctional(const dictionary *ini, Grid *rhoNeutral, Popul
 	}
 }
 
-void mccCollideIonFunctional(const dictionary *ini, Grid *rhoNeutral, Population *pop,
+void mccCollideIonFunctional(const dictionary *ini, Population *pop,
 							 MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo)
 {
 
@@ -1618,7 +1616,7 @@ void mccCollideIonConstantFrq(const dictionary *ini, Population *pop,
 // method handlers are basically a collection of functions to call
 // in a method.
 
-void mccCollideConstantCrossect(const dictionary *ini, Grid *rhoNeutral, Population *pop,
+void mccCollideConstantCrossect(const dictionary *ini, Population *pop,
 								MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo)
 {
 
@@ -1627,8 +1625,8 @@ void mccCollideConstantCrossect(const dictionary *ini, Grid *rhoNeutral, Populat
 		fMsg(ini, "collision", "\n Computing time-step \n");
 	}
 
-	mccCollideIonStatic(ini, rhoNeutral, pop, mccVars, rng, mpiInfo);
-	mccCollideElectronStatic(ini, rhoNeutral, pop, mccVars, rng, mpiInfo);
+	mccCollideIonStatic(ini, pop, mccVars, rng, mpiInfo);
+	mccCollideElectronStatic(ini, pop, mccVars, rng, mpiInfo);
 }
 
 funPtr mccConstCrossect_set(dictionary *ini)
@@ -1643,7 +1641,7 @@ funPtr mccConstCrossect_set(dictionary *ini)
 	return collissions;
 }
 
-void mccCollideConstantFreq(const dictionary *ini, Grid *rhoNeutral, Population *pop,
+void mccCollideConstantFreq(const dictionary *ini, Population *pop,
 							MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo)
 {
 
@@ -1667,7 +1665,7 @@ funPtr mccConstFreq_set(dictionary *ini)
 	return collissions;
 }
 
-void mccCollideFunctional(const dictionary *ini, Grid *rhoNeutral, Population *pop,
+void mccCollideFunctional(const dictionary *ini, Population *pop,
 						  MccVars *mccVars, const gsl_rng *rng, MpiInfo *mpiInfo)
 {
 
@@ -1675,8 +1673,8 @@ void mccCollideFunctional(const dictionary *ini, Grid *rhoNeutral, Population *p
 	{
 		fMsg(ini, "collision", "\n Computing time-step \n");
 	}
-	mccCollideIonFunctional(ini, rhoNeutral, pop, mccVars, rng, mpiInfo);
-	mccCollideElectronFunctional(ini, rhoNeutral, pop, mccVars, rng, mpiInfo);
+	mccCollideIonFunctional(ini, pop, mccVars, rng, mpiInfo);
+	mccCollideElectronFunctional(ini, pop, mccVars, rng, mpiInfo);
 }
 
 funPtr mccFunctionalCrossect_set(dictionary *ini)
@@ -1890,7 +1888,7 @@ static void mccMode(dictionary *ini)
 		/*
 		 *   Collisions
 		 */
-		collide(ini, rhoNeutral, pop, mccVars, rng, mpiInfo);
+		collide(ini, pop, mccVars, rng, mpiInfo);
 
 		// Check that no particle resides out-of-bounds (just for debugging)
 		// pPosAssertInLocalFrame(pop, rho);
@@ -2204,7 +2202,7 @@ static void oCollMode(dictionary *ini)
 		 *   Collisions
 		 *   Changes velocity component of some particles, not position.
 		 */
-		collide(ini, rhoNeutral, pop, mccVars, rng, mpiInfo);
+		collide(ini, pop, mccVars, rng, mpiInfo);
 
 		// Compute charge density
 		distr(pop, rho, rho_e, rho_i);
@@ -2497,7 +2495,7 @@ static void oCollCustomRhoMode(dictionary *ini)
 		 *   Collisions
 		 *   Changes velocity component of some particles, not position.
 		 */
-		collide(ini, mccVars->neutralField->rho, pop, mccVars, rng, mpiInfo);
+		collide(ini, pop, mccVars, rng, mpiInfo);
 
 		// Compute charge density
 		distr(pop, rho, rho_e, rho_i);
