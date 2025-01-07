@@ -914,10 +914,10 @@ static void scatterIon(double *vx_point, double *vy_point, double *vz_point,
 	// unittest
 	double energydiffexpr = Ekin - Ekin * (cos(angleChi) * cos(angleChi)); // ekin aftr
 	double energydiff = Ekin - ekinafter;
-	if (abs(energydiffexpr - energydiff) > 1e-31)
+	double error = abs(energydiffexpr - energydiff);
+	if (error > 1e-31)
 	{
-		msg(WARNING, "too large energy error in collide Ion = %e",
-			(abs(energydiffexpr - energydiff)));
+		msg(WARNING, "too large energy error in collide Ion = %e", error);
 	}
 	if (Ekin < newEkin)
 	{
