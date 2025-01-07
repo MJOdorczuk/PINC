@@ -18,7 +18,6 @@ typedef struct{
 	double pMaxIon;			/// < Max possible collsion probability
 	double maxFreqIon;			/// < Max possible collsion freq
 	double artificialLoss;		/// < Artificial energyloss electrons
-	double nt;
 	double NvelThermal;
 	//crossect values
 	double mccSigmaCEX;
@@ -36,8 +35,9 @@ typedef struct{
 	double energyConvFactor; // convert from PINC to eV
 	double *neutralDrift;
 	char *electronEnergyMethod;
-	NeutralField * neutralField;
+	NeutralField *neutralField;
 } MccVars;
+
 
 
 //void neutTest(dictionary *ini);
@@ -70,6 +70,15 @@ funPtr mccCollissionsOff_set(dictionary *ini);
  */
 
 MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiInfo);
+
+/**
+ * @brief calculates local drift velocity for neutral species
+ * @param x		x-coordinate
+ * @param y		y-coordinate
+ * @param z		z-coordinate
+ * @param drift	pointer to the array of drift velocities, assumed to be 3-dimensional
+ */
+static void mccGetLocalDrift(double x, double y, double z, Grid **drift, double velocity[3]);
 
 
 //

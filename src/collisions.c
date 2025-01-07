@@ -274,6 +274,24 @@ static double mccGetLocalDens(double xIn, double yIn, double zIn, Grid *rhoNeutr
 	return localDens;
 }
 
+static void mccGetLocalDrift(double x, double y, double z, Grid **drift, double velocity[3])
+{
+	// Integer parts of position
+	int j = (int)(x);
+	int k = (int)(y);
+	int l = (int)(z);
+
+	//  Index of neighbouring nodes
+	for (size_t i = 0; i < 3; i++)
+	{
+		long int *sizeProd = drift[i]->sizeProd;
+		long int p = j * sizeProd[1] + k * sizeProd[2] + l * sizeProd[3];
+		velocity[i] = drift[i]->val[p];
+	}
+
+	return velocity;
+}
+
 static double mccGetMaxVel(const Population *pop, int species, MccVars *mccVars)
 {
 
@@ -282,14 +300,17 @@ static double mccGetMaxVel(const Population *pop, int species, MccVars *mccVars)
 	double MaxVelocity = 0;
 	double NewVelocity = 0;
 	int nDims = pop->nDims;
-
-	double *drift = mccVars->neutralDrift;
+	double drift[3];
 
 	long int iStart = pop->iStart[species];
 	long int iStop = pop->iStop[species];
 	for (int i = iStart; i < iStop; i++)
 	{
-		NewVelocity = sqrt((vel[i * nDims] - drift[0]) * (vel[i * nDims] - drift[0]) + (vel[i * nDims + 1] - drift[1]) * (vel[i * nDims + 1] - drift[1]) + (vel[i * nDims + 2] - drift[2]) * (vel[i * nDims + 2] - drift[2]));
+		double x = pop->pos[i * nDims], y = pop->pos[i * nDims + 1], z = pop->pos[i * nDims + 2];
+		mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
+		NewVelocity = sqrt((vel[i * nDims] - drift[0]) * (vel[i * nDims] - drift[0])
+							+ (vel[i * nDims + 1] - drift[1]) * (vel[i * nDims + 1] - drift[1])
+							+ (vel[i * nDims + 2] - drift[2]) * (vel[i * nDims + 2] - drift[2]));
 		if (NewVelocity > MaxVelocity)
 		{
 			MaxVelocity = NewVelocity;
@@ -307,18 +328,22 @@ static double mccGetMaxVelTran(const Population *pop, int species, const gsl_rng
 	double NewVelocity = 0;
 	int nDims = pop->nDims;
 	double vxMW, vyMW, vzMW;
+	double drift[3];
 
-	double *drift = mccVars->neutralDrift;
 
 	long int iStart = pop->iStart[species];
 	long int iStop = pop->iStop[species];
 	for (int i = iStart; i < iStop; i++)
 	{
+		double x = pop->pos[i * nDims], y = pop->pos[i * nDims + 1], z = pop->pos[i * nDims + 2];
+		mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
 		vxMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[0]; // maxwellian dist?
 		vyMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[1]; // yes, gaussian in 3 dim
 		vzMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[2]; // is maxwellian
 
-		NewVelocity = sqrt((vel[i * nDims] - vxMW) * (vel[i * nDims] - vxMW) + (vel[i * nDims + 1] - vyMW) * (vel[i * nDims + 1] - vyMW) + (vel[i * nDims + 2] - vzMW) * (vel[i * nDims + 2] - vzMW));
+		NewVelocity = sqrt((vel[i * nDims] - vxMW) * (vel[i * nDims] - vxMW)
+						+ (vel[i * nDims + 1] - vyMW) * (vel[i * nDims + 1] - vyMW)
+						+ (vel[i * nDims + 2] - vzMW) * (vel[i * nDims + 2] - vzMW));
 		if (NewVelocity > MaxVelocity)
 		{
 			MaxVelocity = NewVelocity;
@@ -432,8 +457,7 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiI
 	double *thermalVelocity = iniGetDoubleArr(ini, "population:thermalVelocity", nSpecies);
 	electronMassRatio = mass[0] * units->mass / units->weights[0];
 	electronMassRatio /= iniGetDouble(ini, "collisions:realElectronMass");
-	mccVars->neutralDrift = neutralDrift,
-	mccVars->nt = iniGetDouble(ini, "collisions:numberDensityNeutrals"); // constant for now
+	mccVars->neutralDrift = neutralDrift;
 	mccVars->NvelThermal = iniGetDouble(ini, "collisions:thermalVelocityNeutrals");
 
 	mccVars->energyConvFactor = (units->energy / 6.24150913 * pow(10, 18)); // J/(J/eV)
@@ -442,11 +466,14 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiI
 	mccVars->collFrqIonElastic = iniGetDouble(ini, "collisions:collFrqIonElastic");
 	mccVars->collFrqElectronElastic = iniGetDouble(ini, "collisions:collFrqElectronElastic");
 
-	// TODO: We are assuming one Ion species here, this should be extended to
-	//  several species
-	mccVars->mccSigmaElectronElastic = mccVars->collFrqElectronElastic / (mccVars->nt * sqrt(2) * (thermalVelocity[0]));	  // iniGetDouble(ini,"collisions:sigmaElectronElastic");
-	mccVars->mccSigmaCEX = (mccVars->collFrqCex / (mccVars->nt * (mccVars->NvelThermal + thermalVelocity[1])));				  // iniGetDouble(ini,"collisions:sigmaCEX");
-	mccVars->mccSigmaIonElastic = (mccVars->collFrqIonElastic / (mccVars->nt * (mccVars->NvelThermal + thermalVelocity[1]))); // iniGetDouble(ini,"collisions:sigmaIonElastic");
+	// TODO: We are assuming one Ion species here, this should be extended to several species
+	int nt = iniGetDouble(ini, "collisions:numberDensityNeutrals"); // constant for now
+	// iniGetDouble(ini,"collisions:sigmaElectronElastic");
+	// iniGetDouble(ini,"collisions:sigmaCEX");
+	// iniGetDouble(ini,"collisions:sigmaIonElastic");
+	mccVars->mccSigmaElectronElastic = mccVars->collFrqElectronElastic / (nt * sqrt(2) * (thermalVelocity[0]));
+	mccVars->mccSigmaCEX = (mccVars->collFrqCex / (nt * (mccVars->NvelThermal + thermalVelocity[1])));
+	mccVars->mccSigmaIonElastic = (mccVars->collFrqIonElastic / (nt * (mccVars->NvelThermal + thermalVelocity[1])));
 
 	mccVars->CEX_a = iniGetDouble(ini, "collisions:CEX_a");
 	mccVars->CEX_b = iniGetDouble(ini, "collisions:CEX_b");
@@ -506,16 +533,17 @@ static void mccGetPmaxIonConstantFrq(const dictionary *ini, MccVars *mccVars,
 	}
 }
 
-static void mccGetPmaxIonFunctional(const dictionary *ini,
-									MccVars *mccVars, Population *pop,
-									MpiInfo *mpiInfo)
+static void mccGetPmaxIonFunctional(const dictionary *ini, MccVars *mccVars,
+									Population *pop, MpiInfo *mpiInfo)
 {
 	// determine max local number desity / max_x(n_t(x_i)) (for target species, neutrals)
 	// Get å functional form of sigma_T (total crossect as funct. of energy)
 	// determine the speed, v(eps_i) = sqrt(2*eps_i *m_s)
 	// determine, max_eps(sigma_T *v)
 
-	double nt = mccVars->nt;
+	// TODO: Check if this is correct
+	// TODO: Neutral field is (or at least should be) static, may be replaced by a static value
+	double nt = mccGetMaxDens(mccVars->neutralField->rho);
 	double CEX_a = mccVars->CEX_a;
 	double CEX_b = mccVars->CEX_b;
 	double elastic_a = mccVars->ion_elastic_a;
@@ -553,8 +581,9 @@ static void mccGetPmaxElectronFunctional(const dictionary *ini,
 {
 
 	// determines maximum collision probability
-
-	double nt = mccVars->nt;
+	// TODO: Check if this is correct
+	// TODO: Neutral field is (or at least should be) static, may be replaced by a static value
+	double nt = mccGetMaxDens(mccVars->neutralField->rho);
 	double a = mccVars->electron_a;
 	double b = mccVars->electron_b;
 
@@ -910,23 +939,19 @@ void mccCollideElectronStatic(const dictionary *ini, Population *pop,
 	double mccSigmaElectronElastic = mccVars->mccSigmaElectronElastic;
 	double maxfreqElectron = mccVars->maxFreqElectron;
 	double Pmax = mccVars->pMaxElectron;
-	double *drift = mccVars->neutralDrift;
 	int nDims = pop->nDims;
-	double *vel = pop->vel;
-	double *pos = pop->pos;
+	double *vel = pop->vel, *pos = pop->pos;
 	double R = gsl_rng_uniform_pos(rng);
 	double Rp = gsl_rng_uniform(rng);
 	long int q = 0;
-	double *vx;
-	double *vy;
-	double *vz;
+	double *vx, *vy, *vz;
+	double drift[3];
 	long int last_i = 0;
 	long int errorcounter = 0;
 
 	double x, y, z;
 
-	long int iStart = pop->iStart[0];
-	long int iStop = pop->iStop[0];
+	long int iStart = pop->iStart[0], iStop = pop->iStop[0];
 	long int NparticleColl = (Pmax) * (pop->iStop[0] - pop->iStart[0]);
 	long int mccStepSize = floor((double)((iStop - iStart)) / (double)(NparticleColl));
 	if (mpiInfo->mpiRank == 0)
@@ -948,6 +973,7 @@ void mccCollideElectronStatic(const dictionary *ini, Population *pop,
 		x = pos[q];
 		y = pos[q + 1];
 		z = pos[q + 2];
+		mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
 		nt = mccGetLocalDens(x, y, z, mccVars->neutralField->rho);
 
 		vel[q] = vel[q] - drift[0];			// transform frames here
@@ -977,10 +1003,11 @@ void mccCollideElectronStatic(const dictionary *ini, Population *pop,
 	// Special handling of last box to let every particle have posibillity
 	// to collide
 
-	R = gsl_rng_uniform_pos(rng);							// New random number per particle.
-	Rp = gsl_rng_uniform_pos(rng);							// separate rand num. for prob.
+	R = gsl_rng_uniform_pos(rng);	// New random number per particle.
+	Rp = gsl_rng_uniform_pos(rng);	// separate rand num. for prob.
 	q = ((last_i) + floor(R * (((iStop)-last_i)))) * nDims; // particle q collides
 
+	mccGetLocalDrift(pos[q], pos[q + 1], pos[q + 2], mccVars->neutralField->vel, drift);
 	vel[q] = vel[q] - drift[0];			// transform frames here
 	vel[q + 1] = vel[q + 1] - drift[1]; // to get correct collision frequency
 	vel[q + 2] = vel[q + 2] - drift[2];
@@ -1025,16 +1052,12 @@ void mccCollideIonStatic(const dictionary *ini, Population *pop,
 	double maxfreqIon = mccVars->maxFreqIon;
 	double Pmax = mccVars->pMaxIon;
 	int nDims = pop->nDims;
-	double *vel = pop->vel;
-	double *pos = pop->pos;
+	double *vel = pop->vel, *pos = pop->pos;
 	double Rp, Rq;
-
-	double *drift = mccVars->neutralDrift;
+	double drift[3];
 
 	// pointers to pass to scatter function
-	double *vx;
-	double *vy;
-	double *vz;
+	double *vx, *vy, *vz;
 
 	double x, y, z; // position used to find local density;
 
@@ -1066,15 +1089,16 @@ void mccCollideIonStatic(const dictionary *ini, Population *pop,
 		Rq = gsl_rng_uniform_pos(rng);
 		q = (i + floor(Rq * mccStepSize)) * nDims; // particle q collides
 
+		x = pos[q];
+		y = pos[q + 1];
+		z = pos[q + 2];
+		mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
 		// Remove drift
 		vel[q] = vel[q] - drift[0];
 		vel[q + 1] = vel[q + 1] - drift[1];
 		vel[q + 2] = vel[q + 2] - drift[2];
 
 		// get local density at particle
-		x = pos[q];
-		y = pos[q + 1];
-		z = pos[q + 2];
 		nt = mccGetLocalDens(x, y, z, mccVars->neutralField->rho);
 
 		// transfer to neutral stationary frame
@@ -1129,7 +1153,10 @@ void mccCollideIonStatic(const dictionary *ini, Population *pop,
 	vxMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal);
 	vyMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal);
 	vzMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal);
-
+	x = pos[q];
+	y = pos[q + 1];
+	z = pos[q + 2];
+	mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
 	// Remove drift
 	vel[q] = vel[q] - drift[0];
 	vel[q + 1] = vel[q + 1] - drift[1];
@@ -1198,7 +1225,9 @@ void mccCollideElectronFunctional(const dictionary *ini, Population *pop,
 
 	mccGetPmaxElectronFunctional(ini, mccVars, pop, mpiInfo);
 
-	double nt = mccVars->nt; // constant for now
+	// TODO: Check if this is correct
+	// TODO: Neutral field is (or at least should be) static, may be replaced by a static value
+	double nt = mccGetMaxDens(mccVars->neutralField->rho);
 	double electron_a = mccVars->electron_a;
 	double electron_b = mccVars->electron_b;
 	double maxfreqElectron = mccVars->maxFreqElectron;
@@ -1283,7 +1312,10 @@ void mccCollideIonFunctional(const dictionary *ini, Population *pop,
 {
 
 	// uses static CROSS-Sections, collfreq is proportional to v
-	double nt = mccVars->nt;
+	// TODO: Check if this is correct
+	// TODO: Should that not be posiition dependent?
+	// TODO: Neutral field is (or at least should be) static, may be replaced by a static value
+	double nt = mccGetMaxDens(mccVars->neutralField->rho);
 	double NvelThermal = mccVars->NvelThermal;
 	double CEX_a = mccVars->CEX_a;
 	double CEX_b = mccVars->CEX_b;
@@ -1501,7 +1533,6 @@ void mccCollideIonConstantFrq(const dictionary *ini, Population *pop,
 	double Pmax = mccVars->pMaxIon;
 	int nDims = pop->nDims;
 	double *vel = pop->vel;
-	double *drift = mccVars->neutralDrift;
 
 	double Rp, Rq;
 	long int q = 0;
@@ -1515,6 +1546,7 @@ void mccCollideIonConstantFrq(const dictionary *ini, Population *pop,
 	double *vx;
 	double *vy;
 	double *vz;
+	double drift[3];
 
 	double MyCollFreq1 = collFrqIonElastic;
 	double MyCollFreq2 = collFrqIonCEX;
@@ -1534,7 +1566,7 @@ void mccCollideIonConstantFrq(const dictionary *ini, Population *pop,
 
 	for (long int i = iStart; i < mccStop; i += mccStepSize)
 	{
-
+		mccGetLocalDrift(pop->pos[i], pop->pos[i + 1], pop->pos[i + 2], mccVars->neutralField->vel, drift);
 		vxMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[0];
 		vyMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[1];
 		vzMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[2];
@@ -1574,7 +1606,7 @@ void mccCollideIonConstantFrq(const dictionary *ini, Population *pop,
 	Rp = gsl_rng_uniform_pos(rng); // decides type of coll.
 	Rq = gsl_rng_uniform_pos(rng);
 	q = ((last_i) + floor(Rq * (((iStop)-last_i)))) * nDims; // particle q collides
-
+	mccGetLocalDrift(pop->pos[q], pop->pos[q + 1], pop->pos[q + 2], mccVars->neutralField->vel, drift);
 	vxMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[0];
 	vyMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[1];
 	vzMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[2];
@@ -1753,7 +1785,8 @@ static void mccMode(dictionary *ini)
 
 	Grid *rhoNeutral = gAlloc(ini, SCALAR, mpiInfo);
 	gZero(rhoNeutral);
-	gAdd(rhoNeutral, mccVars->nt);
+	int nt = iniGetInt(ini, "collisions:numberDensityNeutrals");
+	gAdd(rhoNeutral, nt);
 
 	// Creating a neighbourhood in the rho to handle migrants
 	gCreateNeighborhood(ini, mpiInfo, rho);
@@ -2151,7 +2184,8 @@ static void oCollMode(dictionary *ini)
 
 	Grid *rhoNeutral = gAlloc(ini, SCALAR, mpiInfo);
 	gZero(rhoNeutral);
-	gAdd(rhoNeutral, mccVars->nt);
+	int nt = iniGetInt(ini, "collisions:numberDensityNeutrals");
+	gAdd(rhoNeutral, nt);
 
 	//-----------------------------------
 	//- NEUTRALS - initialization - end
