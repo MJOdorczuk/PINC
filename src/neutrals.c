@@ -2754,7 +2754,7 @@ void neVelAssertMax(const NeutralPopulation *pop, double max)
 
 				if (vel[i * nDims + d] > max)
 				{
-					msg(ERROR, "Particle i=%li (of specie %i) travels too"
+					msg(ERROR, "Particle i=%li (of specie %i) travels too "
 							   "fast in dimension %i: %f>%f",
 						i, s, d, vel[i * nDims + d], max);
 				}

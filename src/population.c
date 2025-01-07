@@ -437,7 +437,7 @@ void pVelAssertMax(const Population *pop, double max){
 			for(int d=0;d<nDims;d++){
 
 				if(vel[i*nDims+d]>max){
-					msg(ALL,	"Particle i=%li (of specie %i) travels too"
+					msg(ALL,	"Particle i=%li (of specie %i) travels too "
 					 			"fast in dimension %i: %f>%f",
 								i, s, d, vel[i*nDims+d], max);
 					err=1;
