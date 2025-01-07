@@ -453,11 +453,10 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiI
 	int nSpecies = iniGetInt(ini, "population:nSpecies");
 	int nSpeciesNeutral = iniGetInt(ini, "collisions:nSpeciesNeutral");
 	double *mass = iniGetDoubleArr(ini, "population:mass", nSpecies);
-	double *neutralDrift = iniGetDoubleArr(ini, "collisions:neutralDrift", 3 * nSpeciesNeutral);
 	double *thermalVelocity = iniGetDoubleArr(ini, "population:thermalVelocity", nSpecies);
+	mccVars->neutralDrift = iniGetDoubleArr(ini, "collisions:neutralDrift", 3 * nSpeciesNeutral);
 	electronMassRatio = mass[0] * units->mass / units->weights[0];
 	electronMassRatio /= iniGetDouble(ini, "collisions:realElectronMass");
-	mccVars->neutralDrift = neutralDrift;
 	mccVars->NvelThermal = iniGetDouble(ini, "collisions:thermalVelocityNeutrals");
 
 	mccVars->energyConvFactor = (units->energy / 6.24150913 * pow(10, 18)); // J/(J/eV)
