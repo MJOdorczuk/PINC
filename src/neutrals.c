@@ -590,9 +590,11 @@ void pNeutralFree(NeutralPopulation *pop)
 
 NeutralField *gNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo)
 {
+	int nSpecies = iniGetInt(ini, "collisions:nSpeciesNeutral");
 	// Initialise the field object
 	NeutralField *field = malloc(sizeof(*field));
 	// Allocate the fields
+	field->nt = malloc(nSpecies * sizeof(double));
 	field->rho = gAlloc(ini, SCALAR, mpiInfo);
 	field->vth = gAlloc(ini, SCALAR, mpiInfo);
 	// Todo: should we keep it n-dimensional or just 3D?
@@ -600,9 +602,9 @@ NeutralField *gNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo)
 	field->vel = malloc(field->nDims * sizeof(Grid *));
 
 	// Set uniform density
-	double rho = iniGetDouble(ini, "collisions:numberDensityNeutrals"); // constant for now
+	field->nt = iniGetDoubleArr(ini, "collisions:numberDensityNeutrals", nSpecies);
 	gZero(field->rho);
-	gAdd(field->rho, rho);
+	gAdd(field->rho, 1);
 
 	// Set uniform thermal velocity
 	double vth = iniGetDouble(ini, "collisions:thermalVelocityNeutrals");
@@ -622,6 +624,7 @@ NeutralField *gNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo)
 
 void gNeutralFieldFree(NeutralField *field)
 {
+	free(field->nt);
 	gFree(field->rho);
 	gFree(field->vth);
 	for (int d = 0; d < field->nDims; d++)

@@ -76,9 +76,10 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiI
  * @param x		x-coordinate
  * @param y		y-coordinate
  * @param z		z-coordinate
- * @param drift	pointer to the array of drift velocities, assumed to be 3-dimensional
+ * @param drift	pointer to the MCC variables structure containing the drift field
+ * @param velocity	pointer to output velocity array
  */
-static void mccGetLocalDrift(double x, double y, double z, Grid **drift, double velocity[3]);
+static void mccGetLocalDrift(double x, double y, double z, MccVars *mccVars, double velocity[3]);
 
 
 //

@@ -219,11 +219,12 @@ static double mccGetMaxDens(Grid *density)
 	return newval;
 }
 
-static double mccGetLocalDens(double xIn, double yIn, double zIn, Grid *rhoNeutral)
+static double mccGetLocalDens(double xIn, double yIn, double zIn, MccVars *mccVars, int species)
 {
 
-	long int *sizeProd = rhoNeutral->sizeProd;
-	double *val = rhoNeutral->val;
+	long int *sizeProd = mccVars->neutralField->rho->sizeProd;
+	double *val = mccVars->neutralField->rho->val;
+	double nt = mccVars->neutralField->nt[species];
 
 	double localDens = 0;
 
@@ -279,19 +280,20 @@ static double mccGetLocalDens(double xIn, double yIn, double zIn, Grid *rhoNeutr
 	return localDens;
 }
 
-static void mccGetLocalDrift(double x, double y, double z, Grid **drift, double velocity[3])
+static void mccGetLocalDrift(double x, double y, double z, MccVars *mccVars, double velocity[3])
 {
 	// Integer parts of position
 	int j = (int)(x);
 	int k = (int)(y);
 	int l = (int)(z);
+	Grid **drift = mccVars->neutralField->vel;
 
 	//  Index of neighbouring nodes
 	for (size_t i = 0; i < 3; i++)
 	{
 		long int *sizeProd = drift[i]->sizeProd;
 		long int p = j * sizeProd[1] + k * sizeProd[2] + l * sizeProd[3];
-		velocity[i] = drift[i]->val[p];
+		velocity[i] = drift[i]->val[p] * mccVars->neutralDrift[i];
 	}
 
 	return velocity;
@@ -312,7 +314,7 @@ static double mccGetMaxVel(const Population *pop, int species, MccVars *mccVars)
 	for (int i = iStart; i < iStop; i++)
 	{
 		double x = pop->pos[i * nDims], y = pop->pos[i * nDims + 1], z = pop->pos[i * nDims + 2];
-		mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
+		mccGetLocalDrift(x, y, z, mccVars, drift);
 		NewVelocity = sqrt((vel[i * nDims] - drift[0]) * (vel[i * nDims] - drift[0])
 							+ (vel[i * nDims + 1] - drift[1]) * (vel[i * nDims + 1] - drift[1])
 							+ (vel[i * nDims + 2] - drift[2]) * (vel[i * nDims + 2] - drift[2]));
@@ -341,7 +343,7 @@ static double mccGetMaxVelTran(const Population *pop, int species, const gsl_rng
 	for (int i = iStart; i < iStop; i++)
 	{
 		double x = pop->pos[i * nDims], y = pop->pos[i * nDims + 1], z = pop->pos[i * nDims + 2];
-		mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
+		mccGetLocalDrift(x, y, z, mccVars, drift);
 		vxMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[0]; // maxwellian dist?
 		vyMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[1]; // yes, gaussian in 3 dim
 		vzMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[2]; // is maxwellian
@@ -977,8 +979,9 @@ void mccCollideElectronStatic(const dictionary *ini, Population *pop,
 		x = pos[q];
 		y = pos[q + 1];
 		z = pos[q + 2];
-		mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
-		nt = mccGetLocalDens(x, y, z, mccVars->neutralField->rho);
+		mccGetLocalDrift(x, y, z, mccVars, drift);
+		// TODO: which species should it be? 0?
+		nt = mccGetLocalDens(x, y, z, mccVars, 0);
 
 		vel[q] = vel[q] - drift[0];			// transform frames here
 		vel[q + 1] = vel[q + 1] - drift[1]; // to get correct collision frequency
@@ -1011,7 +1014,7 @@ void mccCollideElectronStatic(const dictionary *ini, Population *pop,
 	Rp = gsl_rng_uniform_pos(rng);	// separate rand num. for prob.
 	q = ((last_i) + floor(R * (((iStop)-last_i)))) * nDims; // particle q collides
 
-	mccGetLocalDrift(pos[q], pos[q + 1], pos[q + 2], mccVars->neutralField->vel, drift);
+	mccGetLocalDrift(pos[q], pos[q + 1], pos[q + 2], mccVars, drift);
 	vel[q] = vel[q] - drift[0];			// transform frames here
 	vel[q + 1] = vel[q + 1] - drift[1]; // to get correct collision frequency
 	vel[q + 2] = vel[q + 2] - drift[2];
@@ -1096,14 +1099,15 @@ void mccCollideIonStatic(const dictionary *ini, Population *pop,
 		x = pos[q];
 		y = pos[q + 1];
 		z = pos[q + 2];
-		mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
+		mccGetLocalDrift(x, y, z, mccVars, drift);
 		// Remove drift
 		vel[q] = vel[q] - drift[0];
 		vel[q + 1] = vel[q + 1] - drift[1];
 		vel[q + 2] = vel[q + 2] - drift[2];
 
 		// get local density at particle
-		nt = mccGetLocalDens(x, y, z, mccVars->neutralField->rho);
+		// TODO: which species though? 0?
+		nt = mccGetLocalDens(x, y, z, mccVars, 0);
 
 		// transfer to neutral stationary frame
 		double vxTran = vel[q] - vxMW;
@@ -1160,7 +1164,7 @@ void mccCollideIonStatic(const dictionary *ini, Population *pop,
 	x = pos[q];
 	y = pos[q + 1];
 	z = pos[q + 2];
-	mccGetLocalDrift(x, y, z, mccVars->neutralField->vel, drift);
+	mccGetLocalDrift(x, y, z, mccVars, drift);
 	// Remove drift
 	vel[q] = vel[q] - drift[0];
 	vel[q + 1] = vel[q + 1] - drift[1];
@@ -1175,7 +1179,8 @@ void mccCollideIonStatic(const dictionary *ini, Population *pop,
 	x = pos[q];
 	y = pos[q + 1];
 	z = pos[q + 2];
-	nt = mccGetLocalDens(x, y, z, mccVars->neutralField->rho);
+	// TODO: which species though? 0?
+	nt = mccGetLocalDens(x, y, z, mccVars, 0);
 
 	double MyCollFreq1 = mccGetMyCollFreqStatic(mccSigmaIonElastic, vxTran,
 												vyTran, vzTran, nt);
@@ -1570,7 +1575,7 @@ void mccCollideIonConstantFrq(const dictionary *ini, Population *pop,
 
 	for (long int i = iStart; i < mccStop; i += mccStepSize)
 	{
-		mccGetLocalDrift(pop->pos[i], pop->pos[i + 1], pop->pos[i + 2], mccVars->neutralField->vel, drift);
+		mccGetLocalDrift(pop->pos[i], pop->pos[i + 1], pop->pos[i + 2], mccVars, drift);
 		vxMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[0];
 		vyMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[1];
 		vzMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[2];
@@ -1610,7 +1615,7 @@ void mccCollideIonConstantFrq(const dictionary *ini, Population *pop,
 	Rp = gsl_rng_uniform_pos(rng); // decides type of coll.
 	Rq = gsl_rng_uniform_pos(rng);
 	q = ((last_i) + floor(Rq * (((iStop)-last_i)))) * nDims; // particle q collides
-	mccGetLocalDrift(pop->pos[q], pop->pos[q + 1], pop->pos[q + 2], mccVars->neutralField->vel, drift);
+	mccGetLocalDrift(pop->pos[q], pop->pos[q + 1], pop->pos[q + 2], mccVars, drift);
 	vxMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[0];
 	vyMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[1];
 	vzMW = gsl_ran_gaussian_ziggurat(rng, NvelThermal) + drift[2];

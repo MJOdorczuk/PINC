@@ -53,7 +53,8 @@ typedef struct{
  *
  */
 typedef struct{
-	Grid *rho; // neutral species density
+	double *nt; // average number density for each species
+	Grid *rho; // normalised neutral species density
 	Grid *vth; // neutral species thermal velocity
 	Grid **vel; // neutral species velocity
 	int nDims; // number of dimensions (TODO: is it not redundant?)
