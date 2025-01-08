@@ -206,49 +206,59 @@ def generateCollisionsPart(
         # Number of neutral species
         nSpeciesNeutral = 1,
         # Mass of the neutral species in kg(todo: check the unit)
-        neutralMass = 1.6724828e-27,
+        neutralMass = [1.6724828e-27],
         # Drift of the neutral species in m/s(todo: check the unit)
+        # Should be one for all the species
         neutralDrift = [0, 0, 0],
         # Number density of the neutral species in m^-3(todo: check the unit)
-        numberDensityNeutrals = 5.8977e9,
+        # One per species
+        numberDensityNeutrals = [5.8977e9],
         # Thermal velocity of the neutral species in m/s(todo: check the unit)
-        thermalVelocityNeutrals = 2873,
+        # One per species
+        thermalVelocityNeutrals = [2873],
         # Artificial loss factor for electrons(todo: check the specific purpose)
+        # todo: should it be one per species?
         artificialLoss = 1.0,
         # Real electron mass in kg(todo: check the unit and specific purpose)
+        # todo: should it be one per species?
         realElectronMass = 9.10938356e-31,
         # Collision frequency for charge exchange collisions
-        collFrqCex = 1.44e8,
+        # One per species
+        collFrqCex = [1.44e8],
         # Collision frequency for ion elastic collisions
-        collFreIonElastic = 2.89e8,
+        # One per species
+        collFreIonElastic = [2.89e8],
         # Collision frequency for electron elastic collisions
-        collFrqElectronElastic = 3.27e9,
-        # If using functional form of crossections e.g mccGetPmax...() freq propto v, this is experimental and overwrites above collfreqs, if using method "mccFunctionalCrossect".
-        CEX_a = 0.00241,
-        CEX_b = 57.06,
-        ion_elastic_a = 0.00081,
-        ion_elastic_b = 150.0,
-        electron_a = 0.001205,
-        electron_b = 1.2758
+        # One per species
+        collFrqElectronElastic = [3.27e9],
+        # If using functional form of crossections e.g mccGetPmax...() freq propto v,
+        # this is experimental and overwrites above collfreqs, if using method "mccFunctionalCrossect".
+        # Each per species
+        CEX_a = [0.00241],
+        CEX_b = [57.06],
+        ion_elastic_a = [0.00081],
+        ion_elastic_b = [150.0],
+        electron_a = [0.001205],
+        electron_b = [1.2758]
         ):
     return f'''[collisions]
 electronEnergyMethod    = {electronEnergyMethod}
 nSpeciesNeutral         = {nSpeciesNeutral}
-neutralMass             = {neutralMass}
+neutralMass             = {",".join(map(str, neutralMass))}
 neutralDrift            = {",".join(map(str, neutralDrift))}
-numberDensityNeutrals   = {numberDensityNeutrals}
-thermalVelocityNeutrals = {thermalVelocityNeutrals}
+numberDensityNeutrals   = {",".join(map(str, numberDensityNeutrals))}
+thermalVelocityNeutrals = {",".join(map(str, thermalVelocityNeutrals))}
 artificialLoss          = {artificialLoss}
 realElectronMass        = {realElectronMass}
-collFrqCex              = {collFrqCex}
-collFrqIonElastic       = {collFreIonElastic}
-collFrqElectronElastic  = {collFrqElectronElastic}
-CEX_a                   = {CEX_a}
-CEX_b                   = {CEX_b}
-ion_elastic_a           = {ion_elastic_a}
-ion_elastic_b           = {ion_elastic_b}
-electron_a              = {electron_a}
-electron_b              = {electron_b}
+collFrqCex              = {",".join(map(str, collFrqCex))}
+collFrqIonElastic       = {",".join(map(str, collFreIonElastic))}
+collFrqElectronElastic  = {",".join(map(str, collFrqElectronElastic))}
+CEX_a                   = {",".join(map(str, CEX_a))}
+CEX_b                   = {",".join(map(str, CEX_b))}
+ion_elastic_a           = {",".join(map(str, ion_elastic_a))}
+ion_elastic_b           = {",".join(map(str, ion_elastic_b))}
+electron_a              = {",".join(map(str, electron_a))}
+electron_b              = {",".join(map(str, electron_b))}
 '''
 
 
