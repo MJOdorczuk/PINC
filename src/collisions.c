@@ -1787,11 +1787,6 @@ static void mccMode(dictionary *ini)
 	double *S = (double *)malloc((3) * (nSpecies) * sizeof(double));
 	double *T = (double *)malloc((3) * (nSpecies) * sizeof(double));
 
-	Grid *rhoNeutral = mccVars->neutralField->rho;
-	gZero(rhoNeutral);
-	int nt = iniGetInt(ini, "collisions:numberDensityNeutrals");
-	gAdd(rhoNeutral, nt);
-
 	// Creating a neighbourhood in the rho to handle migrants
 	gCreateNeighborhood(ini, mpiInfo, rho);
 
@@ -2181,19 +2176,6 @@ static void oCollMode(dictionary *ini)
 	acc(pop, E, T, S);
 	gMul(E, 2.0);
 	puGet3DRotationParameters(ini, T, S, 1.0);
-
-	//-----------------------------------
-	//- NEUTRALS - initialization
-	//-----------------------------------
-
-	Grid *rhoNeutral = mccVars->neutralField->rho;
-	gZero(rhoNeutral);
-	int nt = iniGetInt(ini, "collisions:numberDensityNeutrals");
-	gAdd(rhoNeutral, nt);
-
-	//-----------------------------------
-	//- NEUTRALS - initialization - end
-	//-----------------------------------
 
 	/*
 	 * TIME LOOP
