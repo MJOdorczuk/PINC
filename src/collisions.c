@@ -1787,7 +1787,7 @@ static void mccMode(dictionary *ini)
 	double *S = (double *)malloc((3) * (nSpecies) * sizeof(double));
 	double *T = (double *)malloc((3) * (nSpecies) * sizeof(double));
 
-	Grid *rhoNeutral = gAlloc(ini, SCALAR, mpiInfo);
+	Grid *rhoNeutral = mccVars->neutralField->rho;
 	gZero(rhoNeutral);
 	int nt = iniGetInt(ini, "collisions:numberDensityNeutrals");
 	gAdd(rhoNeutral, nt);
@@ -2186,7 +2186,7 @@ static void oCollMode(dictionary *ini)
 	//- NEUTRALS - initialization
 	//-----------------------------------
 
-	Grid *rhoNeutral = gAlloc(ini, SCALAR, mpiInfo);
+	Grid *rhoNeutral = mccVars->neutralField->rho;
 	gZero(rhoNeutral);
 	int nt = iniGetInt(ini, "collisions:numberDensityNeutrals");
 	gAdd(rhoNeutral, nt);
