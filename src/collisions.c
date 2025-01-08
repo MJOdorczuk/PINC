@@ -92,16 +92,21 @@ static void mccNormalize(dictionary *ini, const Units *units)
 	iniSetDouble(ini, "collisions:collFrqIonElastic", collFrqIonElastic);
 	iniSetDouble(ini, "collisions:collFrqCEX", collFrqCEX);
 
-	// numberdensityneutrals given as numberofparticles/m^3
-	double nt = iniGetDouble(ini, "collisions:numberDensityNeutrals");
+	/*
+	* Why is the first species normalised additionally and in a different way?
+	* I comment out this part as it looks like a bug.
+	* ~Michał Jan Odorczuk
+	*/
+	// // numberdensityneutrals given as numberofparticles/m^3
+	// double nt = iniGetDouble(ini, "collisions:numberDensityNeutrals");
 
-	printf("nt = %e \n", nt);
-	nt /= units->density; // assumes same for elecron and ion
-	nt /= units->weights[1];
+	// printf("nt = %e \n", nt);
+	// nt /= units->density; // assumes same for elecron and ion
+	// nt /= units->weights[1];
 
-	printf("nt = %f \n", nt);
-	// we use computational particles that contain many real particles.
-	iniSetDouble(ini, "collisions:numberDensityNeutrals", nt);
+	// printf("nt = %f \n", nt);
+	// // we use computational particles that contain many real particles.
+	// iniSetDouble(ini, "collisions:numberDensityNeutrals", nt);
 
 	// in m/s
 	// TODO: should be per Neutral specie
