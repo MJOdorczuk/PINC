@@ -489,7 +489,7 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiI
 	// msg(STATUS,"factor = %f",mccVars->energyConvFactor);
 	mccVars->electronEnergyMethod = iniGetStr(ini, "collisions:electronEnergyMethod");
 
-	mccVars->neutralField = pNeutralFieldAlloc(ini, mpiInfo);
+	mccVars->neutralField = gNeutralFieldAlloc(ini, mpiInfo);
 
 	free(mass);
 	return mccVars;
@@ -497,7 +497,7 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiI
 
 void mccFreeVars(MccVars *mccVars)
 {
-	pNeutralFieldFree(mccVars->neutralField);
+	gNeutralFieldFree(mccVars->neutralField);
 	free(mccVars);
 }
 

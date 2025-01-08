@@ -588,7 +588,7 @@ void pNeutralFree(NeutralPopulation *pop)
 	free(pop);
 }
 
-NeutralField *pNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo)
+NeutralField *gNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo)
 {
 	// Initialise the field object
 	NeutralField *field = malloc(sizeof(*field));
@@ -620,7 +620,7 @@ NeutralField *pNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo)
 	return field;
 }
 
-void pNeutralFieldFree(NeutralField *field)
+void gNeutralFieldFree(NeutralField *field)
 {
 	gFree(field->rho);
 	gFree(field->vth);

@@ -83,7 +83,7 @@ def generatePopulationPart(
         perturbMode = [1, 0, 0, 0, 0, 0],
         # thermal velocity of the particles in m/s(todo: check the unit)
         thermalVelocity = [123111, 2873],
-        # maximum velocity of the particles in m/s(todo: check the unit, it cannot be true)
+        # maximum velocity of the particles in normalised units(todo: what normalisation?)
         maxVel = 1
         ):
     return f'''[population]

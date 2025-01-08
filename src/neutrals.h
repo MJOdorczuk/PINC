@@ -84,13 +84,13 @@ void pNeutralFree(NeutralPopulation *pop);
  * @param[in]	ini			Dictionary to input file
  * @param[in]	mpiInfo		Information about MPI
  */
-NeutralField *pNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo);
+NeutralField *gNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo);
 
 /**
  * @brief					Frees memory for neutral field
  * @param[in,out]	field	Pointer to field to be freed
  */
-void pNeutralFieldFree(NeutralField *field);
+void gNeutralFieldFree(NeutralField *field);
 
  //#########################################
  // Distributer
