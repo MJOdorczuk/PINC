@@ -47,8 +47,10 @@ typedef struct{
 /**
  * @brief Contains a field data of the neutral species.
  *
- * The field is stored as grids, where rho is the density, vth is the thermal
- * velocity, and vel is the velocity grid array. The velocity is stored as an array
+ * The field is stored as grids,
+ * where nt are the number densities of the neutral species,
+ * rho is the normalised density field, vth is the thermal velocity,
+ * and vel is the velocity grid array. The velocity is stored as an array
  * of size nDims, where the index is the velocity component.
  *
  */
