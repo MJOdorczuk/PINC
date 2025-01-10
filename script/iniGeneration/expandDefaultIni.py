@@ -87,7 +87,7 @@ def generatePopulationPart(population_params):
     perturbMode = overwrite(population_params, "perturbMode", [1, 0, 0, 0, 0, 0])
     # thermal velocity of the particles in m/s(todo: check the unit)
     thermalVelocity = overwrite(population_params, "thermalVelocity", [123111, 2873])
-    # maximum velocity of the particles in m/s(todo: check the unit, it cannot be true)
+    # maximum velocity of the particles in normalised units (todo: what units?)
     maxVel = overwrite(population_params, "maxVel", 1)
     return f'''[population]
 nSpecies                = {nSpecies}

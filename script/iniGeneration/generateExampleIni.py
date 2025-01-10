@@ -280,7 +280,7 @@ if __name__ == "__main__":
 ;
 {generateFilesPart()}
 {generateMsgfilesPart()}
-{generateTimePart(timesteps=1000)}
+{generateTimePart(timesteps=7000)}
 {generateGridPart(nSubdomains=[int(nx), int(ny), int(nz)], domainSize=[x, y, z])}
 {generateFieldsPart()}
 {generatePopulationPart(nParticles=4, drift=drift+drift)}
