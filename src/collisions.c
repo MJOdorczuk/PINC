@@ -203,11 +203,11 @@ static void mccNormalize(dictionary *ini, const Units *units)
  *	Search functions, can probably use other Functions
  ************************************************/
 
-static double mccGetMaxDens(Grid *density, MccVars *mccVars)
+static double mccGetMaxDens(MccVars *mccVars, int species)
 {
-	long int *sizeProd = density->sizeProd;
-	int rank = density->rank;
-	double *val = density->val;
+	long int *sizeProd = mccVars->neutralField->rho->sizeProd;
+	int rank = mccVars->neutralField->rho->rank;
+	double *val = mccVars->neutralField->rho->val;
 	double newval = 0;
 	for (int i = 0; i < sizeProd[rank]; i++)
 	{
@@ -216,7 +216,7 @@ static double mccGetMaxDens(Grid *density, MccVars *mccVars)
 			newval = val[i];
 		}
 	}
-	return newval;
+	return newval * mccVars->neutralField->nt[species];
 }
 
 static double mccGetLocalDens(double x, double y, double z, MccVars *mccVars, int species)
@@ -560,7 +560,8 @@ static void mccGetPmaxIonFunctional(const dictionary *ini, MccVars *mccVars,
 
 	// TODO: Check if this is correct
 	// TODO: Neutral field is (or at least should be) static, may be replaced by a static value
-	double nt = mccGetMaxDens(mccVars->neutralField->rho);
+	// TODO: Make it work for multiple species
+	double nt = mccGetMaxDens(mccVars, 0);
 	double CEX_a = mccVars->CEX_a;
 	double CEX_b = mccVars->CEX_b;
 	double elastic_a = mccVars->ion_elastic_a;
@@ -600,7 +601,7 @@ static void mccGetPmaxElectronFunctional(const dictionary *ini,
 	// determines maximum collision probability
 	// TODO: Check if this is correct
 	// TODO: Neutral field is (or at least should be) static, may be replaced by a static value
-	double nt = mccGetMaxDens(mccVars->neutralField->rho);
+	double nt = mccGetMaxDens(mccVars, 0);
 	double a = mccVars->electron_a;
 	double b = mccVars->electron_b;
 
@@ -636,7 +637,7 @@ static void mccGetPmaxIonStatic(const dictionary *ini, MccVars *mccVars,
 	// to determine maximum collision probability
 
 	double NvelThermal = mccVars->NvelThermal;
-	double nt = mccGetMaxDens(mccVars->neutralField->rho);
+	double nt = mccGetMaxDens(mccVars, 0);
 	double StaticSigmaCEX = mccVars->mccSigmaCEX;
 	double StaticSigmaIonElastic = mccVars->mccSigmaIonElastic;
 	double max_v = mccGetMaxVelTran(pop, 1, rng, NvelThermal, mccVars);
@@ -659,7 +660,7 @@ static void mccGetPmaxElectronStatic(const dictionary *ini,
 	// Faster static version. uses static cross sections
 	// to determine maximum collision probability
 
-	double nt = mccGetMaxDens(mccVars->neutralField->rho);
+	double nt = mccGetMaxDens(mccVars, 0);
 
 	double StaticSigmaElectronElastic = mccVars->mccSigmaElectronElastic;
 	double max_v = mccGetMaxVel(pop, 0, mccVars);
@@ -1249,7 +1250,7 @@ void mccCollideElectronFunctional(const dictionary *ini, Population *pop,
 
 	// TODO: Check if this is correct
 	// TODO: Neutral field is (or at least should be) static, may be replaced by a static value
-	double nt = mccGetMaxDens(mccVars->neutralField->rho);
+	double nt = mccGetMaxDens(mccVars, 0);
 	double electron_a = mccVars->electron_a;
 	double electron_b = mccVars->electron_b;
 	double maxfreqElectron = mccVars->maxFreqElectron;
@@ -1337,7 +1338,7 @@ void mccCollideIonFunctional(const dictionary *ini, Population *pop,
 	// TODO: Check if this is correct
 	// TODO: Should that not be position dependent?
 	// TODO: Neutral field is (or at least should be) static, may be replaced by a static value
-	double nt = mccGetMaxDens(mccVars->neutralField->rho);
+	double nt = mccGetMaxDens(mccVars, 0);
 	double NvelThermal = mccVars->NvelThermal;
 	double CEX_a = mccVars->CEX_a;
 	double CEX_b = mccVars->CEX_b;
