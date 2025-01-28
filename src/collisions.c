@@ -2512,8 +2512,7 @@ static void oCollCustomRhoMode(dictionary *ini)
 		// tStart(t);
 
 		// Move particles
-		// oRayTrace(pop, obj, deltaRho); <- do we need this still???
-		puMove(pop); // puMove(pop, obj); Do not change functions such that PINC does
+		puMove(pop); // Do not change functions such that PINC does
 		// not work in other run modes!
 
 		// add influx of new particles on boundary
@@ -2524,9 +2523,6 @@ static void oCollCustomRhoMode(dictionary *ini)
 		puMigrate(pop, mpiInfo, rho);
 
 		pFillGhost(ini, rho, pop, rng);
-
-		// Check that no particle resides out-of-bounds (just for debugging)
-		// pPosAssertInLocalFrame(pop, rho); //gives error with open boundary
 
 		// Collect the charges on the objects.
 		oCollectObjectCharge(pop, rhoObj, obj, mpiInfo); // for capMatrix - objects
