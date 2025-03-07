@@ -65,6 +65,7 @@ Units *uAlloc(dictionary *ini){
 	char *method = iniGetStr(ini, "methods:normalization");
 
 	Units *units = NULL;
+	msg(STATUS, "Normalisation factors:");
 	if(!strcmp(method, "semiSI"))	units = uSemiSI(ini);
 	else if(!strcmp(method, "SI"))	units = uSI(ini);
 	else msg(ERROR, "methods:normalization not valid (must be SI or semiSI)");
@@ -100,18 +101,9 @@ void uNormalize(dictionary *ini, const Units *units){
 	adScale(mass,   nSpecies, 1.0/units->mass);
 	adScale(density, nSpecies, 1.0/units->density);
 
-	// for(int s=0; s<nSpecies; s++){
-	// 	printf("mass[s] = %f \n",mass[s]);
-	// 	printf("weights[s] = %f \n",weights[s]);
-	// }
-
 	iniSetDoubleArr(ini, "population:charge", charge, nSpecies);
 	iniSetDoubleArr(ini, "population:mass", mass, nSpecies);
 	iniSetDoubleArr(ini, "population:density", density, nSpecies);
-
-	free(charge);
-	free(mass);
-	free(density);
 
 	/*
 	 * Normalization of everything else.
@@ -122,6 +114,33 @@ void uNormalize(dictionary *ini, const Units *units){
 	iniScaleDouble(ini, "population:perturbAmplitude", 1.0/units->length);
 	iniScaleDouble(ini, "fields:BExt", 1.0/units->bField);
 	iniScaleDouble(ini, "fields:EExt", 1.0/units->eField);
+
+	double *vth = iniGetDoubleArr(ini, "population:thermalVelocity", nSpecies);
+	double *drift = iniGetDoubleArr(ini, "population:drift", nSpecies * 3);
+	double *perAmp = iniGetDoubleArr(ini, "population:perturbAmplitude", nSpecies * 3);
+	double *bExt = iniGetDoubleArr(ini, "fields:BExt", 3);
+	double *eExt = iniGetDoubleArr(ini, "fields:EExt", 3);
+
+	for(int s=0; s<nSpecies; s++){
+		msg(STATUS, "Normalised species %d:\n\tcharge=%f\n\tmass=%f"
+					"\n\tdensity=%f\n\tthermal velocity=%f"
+					"\n\tdrift=%f %f %f"
+					"\n\tperturb amplitude=%f %f %f",
+			s, charge[s], mass[s], density[s], vth[s], drift[3 * s],
+			drift[3 * s + 1], drift[3 * s + 2], perAmp[3 * s], perAmp[3 * s + 1],
+			perAmp[3 * s + 2]);
+	}
+	msg(STATUS, "\n\tmagnetic field=%f %f %f\n\telectric field=%f %f %f",
+		bExt[0], bExt[1], bExt[2], eExt[0], eExt[1], eExt[2]);
+
+	free(charge);
+	free(mass);
+	free(density);
+	free(vth);
+	free(drift);
+	free(perAmp);
+	free(bExt);
+	free(eExt);
 	//msg(ERROR,"1.0/units->eField = %f",1.0/units->eField);
 
 	//double *vTh = iniGetDoubleArr(ini, "population:thermalVelocity", nSpecies);
@@ -222,14 +241,17 @@ static Units *uSI(const dictionary *ini){
 
 	double *weights = (double*)malloc(nSpecies*sizeof(*weights));
 	for(int s=0; s<nSpecies; s++){
-		weights[s] = density[s]*V/nParticles[s];
-		//printf("weights[%i] = %f \n",s,weights[s]);
+		weights[s] = density[s] * V / nParticles[s];
 	}
 
 	double X  = stepSize[0];
 	double T  = timeStep;
-	double Q  = weights[0]*fabs(charge[0]);
-	double M  = pow(T*Q,2)/(vacuumPermittivity*pow(X,nDims));
+	double Q  = weights[0] * fabs(charge[0]);
+	double M  = weights[0] * mass[0];
+	// double M  = pow(T*Q,2)/(vacuumPermittivity*pow(X,nDims));
+	// Why was that monstrosity used for a mass scaling factor?
+	// Am I doing something wrong by replacing it?
+	msg(STATUS, "X = %f, T = %f, Q = %f, M=%f", X, T, Q, M);
 
 	free(charge);
 	free(mass);
@@ -274,6 +296,22 @@ static void uAddDerivedUnits(Units *units){
 	units->bField        = mass/(time*charge);
 	units->energy        = mass*pow(length/time,2);
 	units->current       = charge/time;
+	/*
+	* TODO: this could be displayed when ran with a special flag or sth
+	*/
+	msg(STATUS, "hyper area     = %.2f", units->hyperArea);
+	msg(STATUS, "hyper volume   = %.2f", units->hyperVolume);
+	msg(STATUS, "frequency      = %.2f", units->frequency);
+	msg(STATUS, "velocity       = %.2f", units->velocity);
+	msg(STATUS, "acceleration   = %.2f", units->acceleration);
+	msg(STATUS, "density        = %.2f", units->density);
+	msg(STATUS, "charge density = %.2f", units->chargeDensity);
+	msg(STATUS, "potential      = %.2f", units->potential);
+	msg(STATUS, "electric field = %.2f", units->eField);
+	msg(STATUS, "magnetic field = %.2f", units->bField);
+	msg(STATUS, "energy         = %.2f", units->energy);
+	msg(STATUS, "current        = %.2f", units->current);
+
 
 	//msg(STATUS, "units->potential = %f",units->potential);
 }
