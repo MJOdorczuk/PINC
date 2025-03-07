@@ -20,8 +20,9 @@ collision               = {collisionFile}
 def generateTimePart(time_params):
     # number of timesteps of the simulation
     timesteps=overwrite(time_params, "nTimeSteps", 3000)
-    # lenfth of the timestep in seconds(todo: check the unit)
-    timestep=overwrite(time_params, "timeStep", 1e-8)
+    # length of the timestep in plasma periods
+    # for omega_pe = 1.784e7 1/s it corresponds to 10 ns
+    timestep=overwrite(time_params, "timeStep", 0.1784)
     return f'''[time]
 nTimeSteps              = {timesteps}
 timeStep                = {timestep}
@@ -32,13 +33,13 @@ def generateGridPart(grid_params):
     nDims = overwrite(grid_params, "nDims", 3)
     # number of subdomains in each direction, this scirpts assumes 3D case
     nSubdomains = overwrite(grid_params, "nSubdomains", [1, 1, 1])
-    # number of particles to allocate for (corner, edge, face) in particles per cell(todo: check the unit)
+    # number of particles to allocate for (corner, edge, face) in particles per cell
     nEmigrantsAlloc = overwrite(grid_params, "nEmigrantsAlloc", [2, 4, 16])
     # size of the domain in each direction
     domainSize = overwrite(grid_params, "domainSize", [32, 32, 32])
-    # step size in Debye lengths of specie 0(todo: check the unit)
-    # Is it really Debye lengths? It seems to be the size of the cell in meters
-    stepSize = overwrite(grid_params, "stepSize", 0.0142)
+    # step size in Debye lengths, for lambda_D = 1.05 cm
+    # it corresponds to 1 cm
+    stepSize = overwrite(grid_params, "stepSize", 0.952)
     # number of ghost layers (assume same amount in all directions)
     nGhostLayers = overwrite(grid_params, "nGhostLayers", 1)
     # threshold for particle migration(todo: check the specific purpose)
@@ -73,21 +74,25 @@ def generatePopulationPart(population_params):
     nParticles = overwrite(population_params, "nParticles", 16)
     # number of particles per cell to allocate memory for(todo: check the unit)
     nAlloc = overwrite(population_params, "nAlloc", 32)
-    # charge of the particles in Coulombs(todo: check the unit)
-    charge = overwrite(population_params, "charge", [-1.60217662e-19, 1.60217662e-19])
-    # mass of the particles in kg(todo: check the unit)
-    mass = overwrite(population_params, "mass", [9.10938356e-31, 1.6726219e-27])
-    # density of the particles in m^-3(todo: check the unit and specific purpose)
-    density = overwrite(population_params, "density", [5.8977e9, 5.8977e9])
-    # drift of the particles in m/s(todo: check the unit)
+    # charge of the particles in elementary charges
+    # electrons and monoatomic monopositive oxygen
+    charge = overwrite(population_params, "charge", [-1, 1])
+    # mass of the particles in electron masses
+    # electrons and monoatomic monopositive oxygen
+    mass = overwrite(population_params, "mass", [1, 29170])
+    # density of the particles in densities of electrons
+    density = overwrite(population_params, "density", [1, 1])
+    # drift of the particles in electron thermal velocities
     drift = overwrite(population_params, "drift", [0] * 6)
     # amplitude of the perturbation of the particles in m(todo: check the unit and specific purpose)
     perturbAmplitude = overwrite(population_params, "perturbAmplitude", [1e-5, 0, 0, 0, 0, 0])
     # mode of the perturbation of the particles(todo: check the specific purpose)
     perturbMode = overwrite(population_params, "perturbMode", [1, 0, 0, 0, 0, 0])
-    # thermal velocity of the particles in m/s(todo: check the unit)
-    thermalVelocity = overwrite(population_params, "thermalVelocity", [123111, 2873])
-    # maximum velocity of the particles in normalised units (todo: what units?)
+    # thermal velocity of the particles in electron thermal velocities
+    # 188 km/s for electrons, 750 m/s for O^+
+    thermalVelocity = overwrite(population_params, "thermalVelocity", [1, 0.004])
+    # maximum velocity of the particles in Courant numbers
+    # (todo: should I not make it slightly lower than 1?)
     maxVel = overwrite(population_params, "maxVel", 1)
     return f'''[population]
 nSpecies                = {nSpecies}
@@ -105,7 +110,7 @@ maxVel                  = {maxVel}
 
 def generateMethodsPart(methods_params):
     # collider method
-    collisionMode = overwrite(methods_params, "collisionMode", "oCollMode")
+    collisionMode = overwrite(methods_params, "mode", "oCollMode")
     # normalisation method
     normalization = overwrite(methods_params, "normalization", "SI")
     # Poisson solver method(todo: check the specific purpose)
@@ -178,7 +183,7 @@ def generateObjectPart(object_params):
     # Bias included
     biasOn = overwrite(object_params, "biasOn", 0)
     # Bias value in Volts
-    bias = overwrite(object_params, "bias", 2.0)
+    bias = overwrite(object_params, "bias", 0)
     # Sweep included
     sweepOn = overwrite(object_params, "sweepOn", 0)
     # Sweep time in seconds(todo: check the unit, comment stated hertz but it does not make sense)
@@ -207,30 +212,39 @@ def generateCollisionsPart(collisions_params):
     electronEnergyMethod = overwrite(collisions_params, "electronEnergyMethod", "conservative")
     # Number of neutral species
     nSpeciesNeutral = overwrite(collisions_params, "nSpeciesNeutral", 1)
-    # Mass of the neutral species in kg(todo: check the unit)
-    neutralMass = overwrite(collisions_params, "neutralMass", 1.6724828e-27)
-    # Drift of the neutral species in m/s(todo: check the unit)
+    # Mass of the neutral species in electron masses (oxygen)
+    neutralMass = overwrite(collisions_params, "neutralMass", 29170)
+    # Drift of the neutral species in electron thermal velocities
     neutralDrift = overwrite(collisions_params, "neutralDrift", [0, 0, 0])
-    # Number density of the neutral species in m^-3(todo: check the unit)
-    numberDensityNeutrals = overwrite(collisions_params, "numberDensityNeutrals", 5.8977e9)
-    # Thermal velocity of the neutral species in m/s(todo: check the unit)
-    thermalVelocityNeutrals = overwrite(collisions_params, "thermalVelocityNeutrals", 2873)
+    # Number density of the neutral species in densities of electrons
+    numberDensityNeutrals = overwrite(collisions_params, "numberDensityNeutrals", 1e4)
+    # Thermal velocity of the neutral species in electron thermal velocities
+    thermalVelocityNeutrals = overwrite(collisions_params, "thermalVelocityNeutrals", 0.004)
     # Artificial loss factor for electrons(todo: check the specific purpose)
     artificialLoss = overwrite(collisions_params, "artificialLoss", 1.0)
     # Real electron mass in kg(todo: check the unit and specific purpose)
+    # Kind of useless, was it just for logging?
     realElectronMass = overwrite(collisions_params, "realElectronMass", 9.10938356e-31)
     # Collision frequency for charge exchange collisions
-    collFrqCex = overwrite(collisions_params, "collFrqCex", 1.44e8)
+    # Normalised by dividing by the plasma frequency
+    collFrqCex = overwrite(collisions_params, "collFrqCex", 2.24e-7)
     # Collision frequency for ion elastic collisions
-    collFreIonElastic = overwrite(collisions_params, "collFreIonElastic", 2.89e8)
+    # Normalised by dividing by the plasma frequency
+    collFreIonElastic = overwrite(collisions_params, "collFreIonElastic", 2.47e-7)
     # Collision frequency for electron elastic collisions
-    collFrqElectronElastic = overwrite(collisions_params, "collFrqElectronElastic", 3.27e9)
-    # If using functional form of crossections e.g mccGetPmax...() freq propto v, this is experimental and overwrites above collfreqs, if using method "mccFunctionalCrossect".
-    CEX_a = overwrite(collisions_params, "CEX_a", 0.00241)
+    # Normalised by dividing by the plasma frequency
+    collFrqElectronElastic = overwrite(collisions_params, "collFrqElectronElastic", 4.04e-7)
+    # If using functional form of crossections e.g mccGetPmax...() freq propto v,
+    # this is experimental and overwrites above collfreqs, if using method "mccFunctionalCrossect".
+    # sigma_adj = a * exp(- b * v^2)
+    # a parameter normalised by multiplying by Debye length and ion number density
+    # b parameter normalised by dividing by the thermal velocity of electrons squared
+    # (todo: update b values to something reasonable)
+    CEX_a = overwrite(collisions_params, "CEX_a", 5.25e-7)
     CEX_b = overwrite(collisions_params, "CEX_b", 57.06)
-    ion_elastic_a = overwrite(collisions_params, "ion_elastic_a", 0.00081)
+    ion_elastic_a = overwrite(collisions_params, "ion_elastic_a", 5.78e-7)
     ion_elastic_b = overwrite(collisions_params, "ion_elastic_b", 150.0)
-    electron_a = overwrite(collisions_params, "electron_a", 0.001205)
+    electron_a = overwrite(collisions_params, "electron_a", 4.2e-7)
     electron_b = overwrite(collisions_params, "electron_b", 1.2758)
     return f'''[collisions]
 electronEnergyMethod    = {electronEnergyMethod}
@@ -258,7 +272,7 @@ if __name__ == "__main__":
     import sys
     import json
 
-    drift = [11492, 0, 0]
+    drift = [0.0416, 0, 0]
     params = "{}"
 
     if len(sys.argv) > 4:
