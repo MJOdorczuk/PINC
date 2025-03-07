@@ -170,27 +170,37 @@ static void mccNormalize(dictionary *ini, const Units *units)
 	double *mass = iniGetDoubleArr(ini, "collisions:neutralMass", nSpecies);
 	double *density = iniGetDoubleArr(ini, "collisions:numberDensityNeutrals", nSpecies);
 
-	double V = gGetGlobalVolume(ini) * pow(stepSize[0], nDims);
+	/*
+	* This is the old normalisation that made the neutral density
+	* independent of itself and any other densities.
+	* Changing the neutral density did did not result in anything.
+	*/
+	// double V = gGetGlobalVolume(ini) * pow(stepSize[0], nDims);
 
-	double *weights = (double *)malloc(nSpecies * sizeof(*weights));
-	for (int s = 0; s < nSpecies; s++)
-	{
-		weights[s] = density[s] * V / nParticles[s];
-		// printf("weights[%i] = %f \n",s,weights[s]);
-	}
+	// double *weights = (double *)malloc(nSpecies * sizeof(*weights));
+	// for (int s = 0; s < nSpecies; s++)
+	// {
+	// 	weights[s] = density[s] * V / nParticles[s];
+	// 	// printf("weights[%i] = %f \n",s,weights[s]);
+	// }
 
 	iniScaleDouble(ini, "collisions:neutralDrift", 1.0 / units->velocity);
 
+	/*
+	* TODO: I think it works well for a single neutral species
+	* if we assume it is similar to the species 0 (ions)
+	*/
 	// Simulation particle scaling
-	for (int s = 0; s < nSpecies; s++)
-	{
-		mass[s] *= weights[s];
-		density[s] /= weights[s];
+	// Use ion weights to scale
+	for(int s=0; s<nSpecies; s++){
+		mass[s]    *= units->weights[1];
+		density[s] /= units->weights[1];
+
 	}
 
 	// Normalization
-	adScale(mass, nSpecies, 1.0 / units->mass);
-	adScale(density, nSpecies, 1.0 / units->density);
+	adScale(mass,   nSpecies, 1.0/units->mass);
+	adScale(density, nSpecies, 1.0/units->density);
 
 	iniSetDoubleArr(ini, "collisions:neutralMass", mass, nSpecies);
 	iniSetDoubleArr(ini, "collisions:numberDensityNeutrals", density, nSpecies);
@@ -460,7 +470,7 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiI
 	double maxFreqElectron = 0;
 	double pMaxIon = 0;
 	double maxFreqIon = 0;
-	double electronMassRatio = 0;
+	// double electronMassRatio = 0;
 	// double artificialLoss = 1.;
 	mccVars->pMaxElectron = pMaxElectron;
 	mccVars->maxFreqElectron = maxFreqElectron;
@@ -473,8 +483,8 @@ MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiI
 	double *mass = iniGetDoubleArr(ini, "population:mass", nSpecies);
 	double *thermalVelocity = iniGetDoubleArr(ini, "population:thermalVelocity", nSpecies);
 	mccVars->neutralDrift = iniGetDoubleArr(ini, "collisions:neutralDrift", 3 * nSpeciesNeutral);
-	electronMassRatio = mass[0] * units->mass / units->weights[0];
-	electronMassRatio /= iniGetDouble(ini, "collisions:realElectronMass");
+	// electronMassRatio = mass[0] * units->mass / units->weights[0];
+	// electronMassRatio /= iniGetDouble(ini, "collisions:realElectronMass");
 	mccVars->NvelThermal = iniGetDouble(ini, "collisions:thermalVelocityNeutrals");
 
 	mccVars->energyConvFactor = (units->energy / 6.24150913 * pow(10, 18)); // J/(J/eV)
@@ -1335,9 +1345,6 @@ void mccCollideIonFunctional(const dictionary *ini, Population *pop,
 {
 
 	// uses static CROSS-Sections, collfreq is proportional to v
-	// TODO: Check if this is correct
-	// TODO: Should that not be position dependent?
-	// TODO: Neutral field is (or at least should be) static, may be replaced by a static value
 	double nt = mccGetMaxDens(mccVars, 0);
 	double NvelThermal = mccVars->NvelThermal;
 	double CEX_a = mccVars->CEX_a;
@@ -2575,7 +2582,7 @@ static void oCollCustomRhoMode(dictionary *ini)
 		// Example of writing another dataset to history.xy.h5
 		// xyWrite(history,"/group/group/dataset",(double)n,value,MPI_SUM);
 
-		if (n >= nTimeSteps - 1000 && n % 100 == 0)
+		if (/*n >= nTimeSteps - 1000 && */n % 100 == 0)
 		{
 			gWriteH5(rho, mpiInfo, (double)n);
 			gWriteH5(rho_e, mpiInfo, (double)n);
