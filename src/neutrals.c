@@ -347,7 +347,7 @@ void neInjectParticles(int slicePos, int dim, int multiplyDens, const dictionary
 			// generate velocity for particle
 			for (int dd = 0; dd < nDims; dd++)
 			{
-				vel[dd] = velDrift[(s * nDims) + dd] + gsl_ran_gaussian_ziggurat(rng, velTh);
+				vel[dd] = velDrift[(s * nDims) + dd] + gsl_ran_gaussian_ziggurat_limited(rng, velTh);
 			}
 
 			// Generate position for particle
@@ -804,7 +804,7 @@ void neVelMaxwell(const dictionary *ini, NeutralPopulation *pop, const gsl_rng *
 			for (int d = 0; d < nDims; d++)
 			{
 				index = (s * nDims) + d;
-				vel[d] = velDrift[index] + gsl_ran_gaussian_ziggurat(rng, velTh);
+				vel[d] = velDrift[index] + gsl_ran_gaussian_ziggurat_limited(rng, velTh);
 			}
 		}
 	}
@@ -923,7 +923,7 @@ void neFillGhost(const dictionary *ini, NeutralPopulation *pop, const gsl_rng *r
 					// generate velocity for particle
 					for (int dd = 0; dd < nDims; dd++)
 					{
-						vel[dd] = velDrift[(s * nDims) + dd] + gsl_ran_gaussian_ziggurat(rng, velTh);
+						vel[dd] = velDrift[(s * nDims) + dd] + gsl_ran_gaussian_ziggurat_limited(rng, velTh);
 					}
 
 					// Generate position for particle
@@ -954,7 +954,7 @@ void neFillGhost(const dictionary *ini, NeutralPopulation *pop, const gsl_rng *r
 
 					for (int dd = 0; dd < nDims; dd++)
 					{
-						vel[dd] = velDrift[(s * nDims) + dd] + gsl_ran_gaussian_ziggurat(rng, velTh);
+						vel[dd] = velDrift[(s * nDims) + dd] + gsl_ran_gaussian_ziggurat_limited(rng, velTh);
 					}
 
 					// Generate position for particle

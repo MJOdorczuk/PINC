@@ -394,7 +394,7 @@ void pPosAssertInLocalFrame(const Population *pop, const Grid *grid){
 	int nDims = pop->nDims;
 
 	int err=0;
-	
+
 	for(int s=0; s<nSpecies; s++){
 
 		long int iStart = pop->iStart[s];
@@ -427,7 +427,7 @@ void pVelAssertMax(const Population *pop, double max){
 	int nDims = pop->nDims;
 
 	int err=0;
-	
+
 	for(int s=0; s<nSpecies; s++){
 
 		long int iStart = pop->iStart[s];
@@ -442,7 +442,7 @@ void pVelAssertMax(const Population *pop, double max){
 								i, s, d, vel[i*nDims+d], max);
 					err=1;
 				}
-			
+
 			}
 		}
 	}
@@ -451,7 +451,7 @@ void pVelAssertMax(const Population *pop, double max){
 	if(err>=1){ // make shure error is brodcast so every process exits
 		msg(ERROR,"Particle moving to fast");
 	}
-	
+
 }
 
 void pVelMaxwell(const dictionary *ini, Population *pop, const gsl_rng *rng){
@@ -474,7 +474,7 @@ void pVelMaxwell(const dictionary *ini, Population *pop, const gsl_rng *rng){
 
 			double *vel = &pop->vel[i*nDims];
 			for(int d=0;d<nDims;d++){
-				vel[d] = gsl_ran_gaussian_ziggurat(rng,velTh); //velDrift[index] +
+				vel[d] = gsl_ran_gaussian_ziggurat_limited(rng,velTh); //velDrift[index] +
 			}
 		}
 	}
@@ -578,7 +578,7 @@ void pPurgeGhost(Population *pop, const Grid *grid){
 // 				for(long int i=0;i<newParticles;i++){
 // 					//generate velocity for particle
 // 					for(int d=0;d<nDims;d++){
-// 						vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat(rng,velTh);
+// 						vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat_limited(rng,velTh);
 // 					}
 //
 // 					// Generate position for particle
@@ -604,7 +604,7 @@ void pPurgeGhost(Population *pop, const Grid *grid){
 // 					//generate velocity for particle
 //
 // 					for(int d=0;d<nDims;d++){
-// 						vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat(rng,velTh);
+// 						vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat_limited(rng,velTh);
 // 					}
 //
 // 					// Generate position for particle
@@ -695,7 +695,7 @@ void pPurgeGhost(Population *pop, const Grid *grid){
 // 				for(long int i=0;i<newParticles;i++){
 // 					//generate velocity for particle
 // 					for(int d=0;d<nDims;d++){
-// 						vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat(rng,velTh);
+// 						vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat_limited(rng,velTh);
 // 					}
 //
 // 					// Generate position for particle
@@ -725,7 +725,7 @@ void pPurgeGhost(Population *pop, const Grid *grid){
 // 					//generate velocity for particle
 //
 // 					for(int d=0;d<nDims;d++){
-// 						vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat(rng,velTh);
+// 						vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat_limited(rng,velTh);
 // 					}
 //
 // 					// Generate position for particle
@@ -882,7 +882,7 @@ void pFillGhost(const dictionary *ini, Grid *rho,Population *pop, const gsl_rng 
 					for(long int i=0;i<newParticles;i++){
 						//generate velocity for particle
 						for(int d=0;d<nDims;d++){
-							vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat(rng,velThermal[s]); //sqrt(3)*sqrt(pow(gsl_ran_gaussian_ziggurat(rng,velDrift[(s*nDims)+d]),2)) +
+							vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat_limited(rng,velThermal[s]); //sqrt(3)*sqrt(pow(gsl_ran_gaussian_ziggurat_limited(rng,velDrift[(s*nDims)+d]),2)) +
 
 						}
 
@@ -1024,7 +1024,7 @@ void pPosUniformCell(const dictionary *ini, Grid *rho,Population *pop, const gsl
 					for(long int i=0;i<newParticles;i++){
 						//generate velocity for particle
 						for(int d=0;d<nDims;d++){
-							vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat(rng,velTh);
+							vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat_limited(rng,velTh);
 						}
 
 						// Generate position for particle
@@ -1112,7 +1112,7 @@ void pPosUniformCell(const dictionary *ini, Grid *rho,Population *pop, const gsl
 //
 // 				for(int d=0;d<nDims;d++){
 // 					//index = (s*nDims)+d;
-// 					vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat(rng,velTh);
+// 					vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat_limited(rng,velTh);
 // 					//printf("vel[d] = %f, d= %i\n",vel[d],d);
 // 				}
 //

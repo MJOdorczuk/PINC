@@ -572,3 +572,10 @@ void dumpWholeGrid(dictionary *ini, Grid *grid){
 
 	return;
 }
+
+double gsl_ran_gaussian_ziggurat_limited(const gsl_rng *rng, const double sigma){
+	double result = gsl_ran_gaussian_ziggurat(rng, sigma);
+	if (result < -5 * sigma) result = -5 * sigma;
+	else if(result > 5 * sigma) result = 5 * sigma;
+	return result;
+}

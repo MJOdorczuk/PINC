@@ -122,15 +122,15 @@ void uNormalize(dictionary *ini, const Units *units){
 	double *eExt = iniGetDoubleArr(ini, "fields:EExt", 3);
 
 	for(int s=0; s<nSpecies; s++){
-		msg(STATUS, "Normalised species %d:\n\tcharge=%f\n\tmass=%f"
-					"\n\tdensity=%f\n\tthermal velocity=%f"
-					"\n\tdrift=%f %f %f"
-					"\n\tperturb amplitude=%f %f %f",
+		msg(STATUS, "Normalised species %d:\n\tcharge=%4.3e\n\tmass=%4.3e"
+					"\n\tdensity=%4.3e\n\tthermal velocity=%4.3e"
+					"\n\tdrift=%4.3e %4.3e %4.3e"
+					"\n\tperturb amplitude=%4.3e %4.3e %4.3e",
 			s, charge[s], mass[s], density[s], vth[s], drift[3 * s],
 			drift[3 * s + 1], drift[3 * s + 2], perAmp[3 * s], perAmp[3 * s + 1],
 			perAmp[3 * s + 2]);
 	}
-	msg(STATUS, "\n\tmagnetic field=%f %f %f\n\telectric field=%f %f %f",
+	msg(STATUS, "\n\tmagnetic field=%4.3e %4.3e %4.3e\n\telectric field=%4.3e %4.3e %4.3e",
 		bExt[0], bExt[1], bExt[2], eExt[0], eExt[1], eExt[2]);
 
 	free(charge);
@@ -247,11 +247,11 @@ static Units *uSI(const dictionary *ini){
 	double X  = stepSize[0];
 	double T  = timeStep;
 	double Q  = weights[0] * fabs(charge[0]);
-	double M  = weights[0] * mass[0];
-	// double M  = pow(T*Q,2)/(vacuumPermittivity*pow(X,nDims));
+	// double M  = weights[0] * mass[0];
+	double M  = pow(T*Q,2)/(vacuumPermittivity*pow(X,nDims));
 	// Why was that monstrosity used for a mass scaling factor?
 	// Am I doing something wrong by replacing it?
-	msg(STATUS, "X = %f, T = %f, Q = %f, M=%f", X, T, Q, M);
+	msg(STATUS, "X = %4.3e, T = %4.3e, Q = %4.3e, M=%4.3e", X, T, Q, M);
 
 	free(charge);
 	free(mass);
@@ -299,18 +299,18 @@ static void uAddDerivedUnits(Units *units){
 	/*
 	* TODO: this could be displayed when ran with a special flag or sth
 	*/
-	msg(STATUS, "hyper area     = %.2f", units->hyperArea);
-	msg(STATUS, "hyper volume   = %.2f", units->hyperVolume);
-	msg(STATUS, "frequency      = %.2f", units->frequency);
-	msg(STATUS, "velocity       = %.2f", units->velocity);
-	msg(STATUS, "acceleration   = %.2f", units->acceleration);
-	msg(STATUS, "density        = %.2f", units->density);
-	msg(STATUS, "charge density = %.2f", units->chargeDensity);
-	msg(STATUS, "potential      = %.2f", units->potential);
-	msg(STATUS, "electric field = %.2f", units->eField);
-	msg(STATUS, "magnetic field = %.2f", units->bField);
-	msg(STATUS, "energy         = %.2f", units->energy);
-	msg(STATUS, "current        = %.2f", units->current);
+	msg(STATUS, "hyper area     = %4.3e", units->hyperArea);
+	msg(STATUS, "hyper volume   = %4.3e", units->hyperVolume);
+	msg(STATUS, "frequency      = %4.3e", units->frequency);
+	msg(STATUS, "velocity       = %4.3e", units->velocity);
+	msg(STATUS, "acceleration   = %4.3e", units->acceleration);
+	msg(STATUS, "density        = %4.3e", units->density);
+	msg(STATUS, "charge density = %4.3e", units->chargeDensity);
+	msg(STATUS, "potential      = %4.3e", units->potential);
+	msg(STATUS, "electric field = %4.3e", units->eField);
+	msg(STATUS, "magnetic field = %4.3e", units->bField);
+	msg(STATUS, "energy         = %4.3e", units->energy);
+	msg(STATUS, "current        = %4.3e", units->current);
 
 
 	//msg(STATUS, "units->potential = %f",units->potential);

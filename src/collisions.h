@@ -60,6 +60,14 @@ funPtr mccFunctionalCrossect_set(dictionary *ini);
 funPtr mccConstFreq_set(dictionary *ini);
 funPtr mccCollissionsOff_set(dictionary *ini);
 
+/**
+ * @brief normalises the MCC parameters.
+ * @param ini 		pointer to input file as dictionary
+ * @param units		pointer to units
+ *
+ * ini, and units must exist and be initialized before this function
+ */
+static void mccNormalize(dictionary *ini, const Units *units);
 
 /**
  * @brief allocates necesarry variables for the collision module.
@@ -68,7 +76,6 @@ funPtr mccCollissionsOff_set(dictionary *ini);
  *
  * ini, and units must exist and be initialized before this function.
  */
-
 MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiInfo);
 
 /**

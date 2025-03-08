@@ -306,5 +306,16 @@ void alPrintInner(long int *a, long int inc, long int end, char *varName);
 ///@brief Prints an array in a nice format (for debugging only).
 #define alPrintSpaced(a,inc,end) do { alPrintInner(a,inc,end,#a); } while (0)
 ///@}
+/**
+ * @brief	Generates a random floating point number of Gaussian distribution
+ *          limited to 5 sigmas
+ *          Only roughly one in 2e6 choices are outside of the five sigma range
+ *          thus the truncating should be not affect the results much,
+ *          yet it avoids random super fast particles breaking CFL
+ * @param	rng 	Pointer to the GSL random number generator structure
+ * @param	sigma 	Standard deviation of the distribution
+ * @see		gsl_ran_gaussian_ziggurat
+ */
+double gsl_ran_gaussian_ziggurat_limited(const gsl_rng *rng, const double sigma);
 
 #endif // AUX_H

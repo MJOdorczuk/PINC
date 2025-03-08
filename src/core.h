@@ -485,10 +485,10 @@ typedef void (*funPtr)();
  *****************************************************************************/
 
 #include "object.h"
+#include "aux.h"
 #include "population.h"
 #include "grid.h"
 #include "io.h"
-#include "aux.h"
 #include "units.h"
 #include "neutrals.h"
 

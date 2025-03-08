@@ -761,21 +761,21 @@ void puDistr3D1split(const Population *pop, Grid *rho,Grid *rho_e,Grid *rho_i){
 				val_i[p] 		+= xcomp*ycomp*zcomp;
 				val_i[pj]		+= x    *ycomp*zcomp;
 				val_i[pk]		+= xcomp*y    *zcomp;
-				val_i[pjk]	+= x    *y    *zcomp;
-				val_i[pl]     += xcomp*ycomp*z    ;
-				val_i[pjl]	+= x    *ycomp*z    ;
-				val_i[pkl]	+= xcomp*y    *z    ;
-				val_i[pjkl]	+= x    *y    *z    ;
+				val_i[pjk]		+= x    *y    *zcomp;
+				val_i[pl]     	+= xcomp*ycomp*z    ;
+				val_i[pjl]		+= x    *ycomp*z    ;
+				val_i[pkl]		+= xcomp*y    *z    ;
+				val_i[pjkl]		+= x    *y    *z    ;
 			}
 			if(s==0){
 				val_e[p] 		+= xcomp*ycomp*zcomp;
 				val_e[pj]		+= x    *ycomp*zcomp;
 				val_e[pk]		+= xcomp*y    *zcomp;
-				val_e[pjk]	+= x    *y    *zcomp;
-				val_e[pl]     += xcomp*ycomp*z    ;
-				val_e[pjl]	+= x    *ycomp*z    ;
-				val_e[pkl]	+= xcomp*y    *z    ;
-				val_e[pjkl]	+= x    *y    *z    ;
+				val_e[pjk]		+= x    *y    *zcomp;
+				val_e[pl]   	+= xcomp*ycomp*z    ;
+				val_e[pjl]		+= x    *ycomp*z    ;
+				val_e[pkl]		+= xcomp*y    *z    ;
+				val_e[pjkl]		+= x    *y    *z    ;
 
 			}
 
