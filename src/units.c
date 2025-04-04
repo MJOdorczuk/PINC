@@ -93,7 +93,6 @@ void uNormalize(dictionary *ini, const Units *units){
 		charge[s]  *= weights[s];
 		mass[s]    *= weights[s];
 		density[s] /= weights[s];
-
 	}
 
 	// Normalization
@@ -111,24 +110,22 @@ void uNormalize(dictionary *ini, const Units *units){
 	 */
 	iniScaleDouble(ini, "population:thermalVelocity", 1.0/units->velocity);
 	iniScaleDouble(ini, "population:drift", 1.0/units->velocity);
-	iniScaleDouble(ini, "population:perturbAmplitude", 1.0/units->length);
+	// iniScaleDouble(ini, "population:perturbAmplitude", 1.0/units->length);
 	iniScaleDouble(ini, "fields:BExt", 1.0/units->bField);
 	iniScaleDouble(ini, "fields:EExt", 1.0/units->eField);
 
 	double *vth = iniGetDoubleArr(ini, "population:thermalVelocity", nSpecies);
 	double *drift = iniGetDoubleArr(ini, "population:drift", nSpecies * 3);
-	double *perAmp = iniGetDoubleArr(ini, "population:perturbAmplitude", nSpecies * 3);
+	// double *perAmp = iniGetDoubleArr(ini, "population:perturbAmplitude", nSpecies * 3);
 	double *bExt = iniGetDoubleArr(ini, "fields:BExt", 3);
 	double *eExt = iniGetDoubleArr(ini, "fields:EExt", 3);
 
 	for(int s=0; s<nSpecies; s++){
 		msg(STATUS, "Normalised species %d:\n\tcharge=%4.3e\n\tmass=%4.3e"
 					"\n\tdensity=%4.3e\n\tthermal velocity=%4.3e"
-					"\n\tdrift=%4.3e %4.3e %4.3e"
-					"\n\tperturb amplitude=%4.3e %4.3e %4.3e",
+					"\n\tdrift=%4.3e %4.3e %4.3e",
 			s, charge[s], mass[s], density[s], vth[s], drift[3 * s],
-			drift[3 * s + 1], drift[3 * s + 2], perAmp[3 * s], perAmp[3 * s + 1],
-			perAmp[3 * s + 2]);
+			drift[3 * s + 1], drift[3 * s + 2]);
 	}
 	msg(STATUS, "\n\tmagnetic field=%4.3e %4.3e %4.3e\n\telectric field=%4.3e %4.3e %4.3e",
 		bExt[0], bExt[1], bExt[2], eExt[0], eExt[1], eExt[2]);
@@ -138,7 +135,7 @@ void uNormalize(dictionary *ini, const Units *units){
 	free(density);
 	free(vth);
 	free(drift);
-	free(perAmp);
+	// free(perAmp);
 	free(bExt);
 	free(eExt);
 	//msg(ERROR,"1.0/units->eField = %f",1.0/units->eField);
@@ -235,7 +232,6 @@ static Units *uSI(const dictionary *ini){
 	long int *nParticles = iniGetLongIntArr(ini, "population:nParticles", nSpecies);
 	double *density = iniGetDoubleArr(ini, "population:density", nSpecies);
 	double *charge = iniGetDoubleArr(ini, "population:charge", nSpecies);
-	double *mass = iniGetDoubleArr(ini, "population:mass", nSpecies);
 
 	double V  = gGetGlobalVolume(ini)*pow(stepSize[0],nDims);
 
@@ -247,14 +243,10 @@ static Units *uSI(const dictionary *ini){
 	double X  = stepSize[0];
 	double T  = timeStep;
 	double Q  = weights[0] * fabs(charge[0]);
-	// double M  = weights[0] * mass[0];
 	double M  = pow(T*Q,2)/(vacuumPermittivity*pow(X,nDims));
-	// Why was that monstrosity used for a mass scaling factor?
-	// Am I doing something wrong by replacing it?
 	msg(STATUS, "X = %4.3e, T = %4.3e, Q = %4.3e, M=%4.3e", X, T, Q, M);
 
 	free(charge);
-	free(mass);
 	free(density);
 	free(stepSize);
 	free(nParticles);

@@ -109,23 +109,30 @@ void NeutralDistr3D1Vector(const NeutralPopulation *pop, Grid *bulkV, Grid *rho)
 //######################################
 
 
-void neFillGhost(const dictionary *ini, NeutralPopulation *pop, const gsl_rng *rng, const MpiInfo *mpiInfo);
+void neFillGhost(const dictionary *ini, NeutralPopulation *pop,
+				const gsl_rng *rng, const MpiInfo *mpiInfo);
 
 void nePurgeGhost(NeutralPopulation *pop, const Grid *grid);
 
-void neVelMaxwell(const dictionary *ini, NeutralPopulation *pop, const gsl_rng *rng);
+void neVelMaxwell(const dictionary *ini, NeutralPopulation *pop,
+				const gsl_rng *rng);
 
 void neVelDrift(const dictionary *ini, NeutralPopulation *pop);
 
-void nePosLattice(const dictionary *ini, NeutralPopulation *pop, const MpiInfo *mpiInfo);
+void nePosLattice(const dictionary *ini, NeutralPopulation *pop,
+				const MpiInfo *mpiInfo);
 
-void nePosUniform(const dictionary *ini, NeutralPopulation *pop, const MpiInfo *mpiInfo, const gsl_rng *rng);
+void nePosUniform(const dictionary *ini, NeutralPopulation *pop,
+				const MpiInfo *mpiInfo, const gsl_rng *rng);
 
 void neVelAssertMax(const NeutralPopulation *pop, double max);
 
-void neInjectParticles(int slicePos,int dim,int multiplyDens,const dictionary *ini, NeutralPopulation *pop, const gsl_rng *rng, const MpiInfo *mpiInfo);
+void neInjectParticles(int slicePos, int dim, int multiplyDens,
+					const dictionary *ini, NeutralPopulation *pop,
+					const gsl_rng *rng, const MpiInfo *mpiInfo);
 
-void neMultiplySlice(Grid *target,int slicePos,int dim,double multiplyBy, NeutralPopulation *pop);
+void neMultiplySlice(Grid *target,int slicePos,int dim,double multiplyBy,
+					NeutralPopulation *pop);
 
 
 //#########################################
@@ -192,7 +199,8 @@ void neConvectI(Grid *IE,Grid *Itilde,Grid *dKE,Grid *rhoNeutral,NeutralPopulati
 
 void neApplyObjI(PincObject *obj, Grid *IE);
 void neApplyObjVel(PincObject *obj, Grid *V);
-void neObjectCollide(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj, const MpiInfo *mpiInfo);
+void neObjectCollide(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj,
+					const MpiInfo *mpiInfo);
 void nuObjectSetVal(Grid *rho,double constant, PincObject *obj);
 void nuObjectpurge(NeutralPopulation *pop, Grid *rhoObj, PincObject *obj);
 #endif // POPULATION_H

@@ -461,8 +461,14 @@ void mgSetBndSlices(const dictionary *ini, Grid *grid,const MpiInfo *mpiInfo,int
 					for(int dd = 0;dd<rank-1;dd++){ //dot prod of VxB and indices
 						// grid indices (i,j,k) are computed locally, so we need to
 						// cast them to global frame in the dot product
-						bndSlice[s + (nSliceMax * d)] += veldCrossB[dd]*(indices[dd]+(subdomain[dd]*size[dd+1]*(1+2*level))-(2*subdomain[dd]-(nSubdomains[dd]-1))) -0.5*veldCrossB[dd]*size[dd+1]*(1+2*level)*nSubdomains[dd];
-						//																veldCrossB[dd]*(indices[dd]+(subdomain[dd]*size[dd+1])+(!edge[dd])*(subdomain[dd]+(nSubdomains[dd]-1))+0.5-3*edge[dd]*subdomain[dd]) -0.5*veldCrossB[dd]*size[dd+1]*nSubdomains[dd];
+						bndSlice[s + (nSliceMax * d)] += veldCrossB[dd]
+						* (indices[dd] + (subdomain[dd] * size[dd + 1] * (1 + 2 * level))
+						- (2 * subdomain[dd] - (nSubdomains[dd] - 1)))
+						- 0.5 * veldCrossB[dd] * size[dd+1] * (1 + 2 * level) * nSubdomains[dd];
+						// veldCrossB[dd] * (indices[dd] + (subdomain[dd] * size[dd + 1])
+						// + (!edge[dd]) * (subdomain[dd] + (nSubdomains[dd] - 1))
+						// + 0.5 - 3 * edge[dd] * subdomain[dd])
+						// - 0.5 * veldCrossB[dd] * size[dd + 1] * nSubdomains[dd];
 						//printf("subdomain[%i] = %i, nSubdomains[%i] = %i \n",dd,subdomain[dd],dd,nSubdomains[dd]);
 						if(veldCrossB[dd]*indices[dd]*edge[dd]!=0){
 						}
@@ -526,8 +532,13 @@ void mgSetBndSlices(const dictionary *ini, Grid *grid,const MpiInfo *mpiInfo,int
 					}
 					bndSlice[s + (nSliceMax * (d))] = 0;
 					for(int dd = 0;dd<rank-1;dd++){
-						bndSlice[s + (nSliceMax * (d))] +=  veldCrossB[dd]*((indices[dd])+(subdomain[dd]*size[dd+1]*(1+2*level))-(subdomain[dd])-(subdomain[dd]-(nSubdomains[dd]-1))) -0.5*veldCrossB[dd]*size[dd+1]*(1+2*level)*nSubdomains[dd];
-																								//veldCrossB[dd]*(indices[dd]+(subdomain[dd]*size[dd+1])+0.5-(subdomain[dd])) -0.5*veldCrossB[dd]*size[dd+1]*nSubdomains[dd];
+						bndSlice[s + (nSliceMax * (d))] += veldCrossB[dd]
+						* (indices[dd] + (subdomain[dd] * size[dd + 1] * (1 + 2 * level))
+						- subdomain[dd] - (subdomain[dd] - (nSubdomains[dd] - 1)))
+						- 0.5 * veldCrossB[dd] * size[dd + 1] * (1 + 2 * level)
+						* nSubdomains[dd];
+					// veldCrossB[dd] * (indices[dd] + (subdomain[dd] * size[dd + 1])
+					// + 0.5 - (subdomain[dd])) - 0.5 * veldCrossB[dd] * size[dd + 1] * nSubdomains[dd];
 					}
 					bool incremented = false;
 					for(int dd = 0;dd<rank;dd++){
@@ -2025,7 +2036,7 @@ void mgSolveRaw(funPtr mgAlgo, Multigrid *mgRho, Multigrid *mgPhi, Multigrid *mg
 	//gZero(mgPhi->grids[0]);
 	double tol = mgRho->tol;//1.E-3; //1.E-10;
 	double barRes = 2000000.;
-	double normRho = 1.;
+	// double normRho = 1.;
 	int minIters=5;
 
 	//normRho = mgSumTrueSquared(mgRho->grids[0]); // does total grid not "true" grid

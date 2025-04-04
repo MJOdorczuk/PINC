@@ -1175,7 +1175,8 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 	bndType *bnd = pop->bnd;
 	//int rank = mpiInfo->mpiRank;
 
-	//printf("mpirank = %i, bnd[1] = %d,bnd[2] = %d,bnd[3] = %d, bnd[5] = %d,bnd[6] = %d,bnd[7] = %d \n",rank,bnd[1],bnd[2],bnd[3],bnd[5],bnd[6],bnd[7]);
+	//printf("mpirank = %i, bnd[1] = %d,bnd[2] = %d,bnd[3] = %d, bnd[5] = %d,bnd[6] = %d,bnd[7] = %d \n",
+	// 		rank, bnd[1], bnd[2], bnd[3], bnd[5], bnd[6], bnd[7]);
 	double dummyPos[3];
 
 	int *offset = mpiInfo->offset;
@@ -1247,7 +1248,9 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 				//msg(STATUS,"%i, %i, %i \n",trueSize[0],trueSize[1],trueSize[2]);
 				//printf("global: %f, %f, %f \n",dummyPos[0], dummyPos[1], dummyPos[2]);
 				//printf("Local: %f, %f, %f \n",pop->pos[p+0], pop->pos[p+1], pop->pos[p+2]);
-				//printf("Boundary %f, %f, %f \n \n",ux+trueSize[0]*(nSubdomains[0]-1),uy+trueSize[1]*(nSubdomains[1]-1),uz+trueSize[2]*(nSubdomains[2]-1) );
+				//printf("Boundary %f, %f, %f \n \n", ux + trueSize[0] * (nSubdomains[0] - 1),
+				// 		uy + trueSize[1] * (nSubdomains[1] - 1),
+				// 		uz + trueSize[2] * (nSubdomains[2] - 1));
 				//msg(STATUS, " removing ");
 				// Remove particle out of bounds particle
 
@@ -1360,7 +1363,8 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 				}
 
 			}
-		}//printf("removedupp = %li,removedlow = %li, exhanged = %li s = %i, for rank = %i \n", removedupp,removedlow,exhanged,s,mpiInfo->mpiRank);
+		}//printf("removedupp = %li,removedlow = %li, exhanged = %li s = %i, for rank = %i \n",
+		//			removedupp, removedlow, exhanged, s, mpiInfo->mpiRank);
 		//msg(STATUS,"pRange: %li, iStop: %li",pStart-pStop,pop->iStop[s]);
 	}
 	free(nSubdomains);

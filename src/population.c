@@ -882,7 +882,8 @@ void pFillGhost(const dictionary *ini, Grid *rho,Population *pop, const gsl_rng 
 					for(long int i=0;i<newParticles;i++){
 						//generate velocity for particle
 						for(int d=0;d<nDims;d++){
-							vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat_limited(rng,velThermal[s]); //sqrt(3)*sqrt(pow(gsl_ran_gaussian_ziggurat_limited(rng,velDrift[(s*nDims)+d]),2)) +
+							vel[d] = velDrift[(s*nDims)+d] + gsl_ran_gaussian_ziggurat_limited(rng,velThermal[s]);
+							//sqrt(3)*sqrt(pow(gsl_ran_gaussian_ziggurat_limited(rng,velDrift[(s*nDims)+d]),2)) +
 
 						}
 

@@ -12,6 +12,7 @@
 #include <mpi.h>
 #include <stdarg.h>
 #include <math.h>
+#include <gsl/gsl_randist.h>
 
 /******************************************************************************
  * LOCAL FUNCTION DECLARATIONS
@@ -574,8 +575,17 @@ void dumpWholeGrid(dictionary *ini, Grid *grid){
 }
 
 double gsl_ran_gaussian_ziggurat_limited(const gsl_rng *rng, const double sigma){
+	const double SIGMA_LIMIT = 5;
 	double result = gsl_ran_gaussian_ziggurat(rng, sigma);
-	if (result < -5 * sigma) result = -5 * sigma;
-	else if(result > 5 * sigma) result = 5 * sigma;
+	if (result < -SIGMA_LIMIT * sigma)
+	{
+		msg(STATUS, "Value exceeded the %f times sigma=%f limit, result=%f", SIGMA_LIMIT, sigma, result);
+		result = -SIGMA_LIMIT * sigma;
+	}
+	else if(result > SIGMA_LIMIT * sigma)
+	{
+		msg(STATUS, "Value exceeded the %f times sigma=%f limit, result=%f", SIGMA_LIMIT, sigma, result);
+		result = SIGMA_LIMIT * sigma;
+	}
 	return result;
 }

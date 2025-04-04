@@ -58,16 +58,7 @@ funPtr mccMode_set(dictionary *ini);
 funPtr mccConstCrossect_set(dictionary *ini);
 funPtr mccFunctionalCrossect_set(dictionary *ini);
 funPtr mccConstFreq_set(dictionary *ini);
-funPtr mccCollissionsOff_set(dictionary *ini);
-
-/**
- * @brief normalises the MCC parameters.
- * @param ini 		pointer to input file as dictionary
- * @param units		pointer to units
- *
- * ini, and units must exist and be initialized before this function
- */
-static void mccNormalize(dictionary *ini, const Units *units);
+funPtr mccCollisionsOff_set(dictionary *ini);
 
 /**
  * @brief allocates necesarry variables for the collision module.
@@ -77,25 +68,6 @@ static void mccNormalize(dictionary *ini, const Units *units);
  * ini, and units must exist and be initialized before this function.
  */
 MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiInfo);
-
-/**
- * @brief calculates local thermal velocity for neutral species
- * @param x			x-coordinate
- * @param y			y-coordinate
- * @param z			z-coordinate
- * @param mccVars	pointer to the MCC variables structure containing the drift field
- */
-static double mccGetLocalThermalVelocity(double x, double y, double z, MccVars *mccVars);
-
-/**
- * @brief calculates local drift velocity for neutral species
- * @param x			x-coordinate
- * @param y			y-coordinate
- * @param z			z-coordinate
- * @param mccVars	pointer to the MCC variables structure containing the drift field
- * @param velocity	pointer to output velocity array
- */
-static void mccGetLocalDrift(double x, double y, double z, MccVars *mccVars, double velocity[3]);
 
 
 //

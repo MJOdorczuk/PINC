@@ -176,21 +176,21 @@ void nuGBnd(Grid *grid, const MpiInfo *mpiInfo)
 
 	// If periodic neutralize phi
 
-	bool periodic = true;
-	for (int d = 1; d < rank; d++)
-	{
-		if (bnd[d] != PERIODIC)
-		{
-			periodic = false;
-		}
-	}
-	for (int d = rank + 1; d < 2 * rank; d++)
-	{
-		if (bnd[d] != PERIODIC)
-		{
-			periodic = false;
-		}
-	}
+	// bool periodic = true;
+	// for (int d = 1; d < rank; d++)
+	// {
+	// 	if (bnd[d] != PERIODIC)
+	// 	{
+	// 		periodic = false;
+	// 	}
+	// }
+	// for (int d = rank + 1; d < 2 * rank; d++)
+	// {
+	// 	if (bnd[d] != PERIODIC)
+	// 	{
+	// 		periodic = false;
+	// 	}
+	// }
 
 	// Lower edge
 	for (int d = 1; d < rank; d++)
