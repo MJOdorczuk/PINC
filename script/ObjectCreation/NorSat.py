@@ -7,7 +7,6 @@
 
 """
 
-
 import h5py
 import numpy as np
 import sys
@@ -56,12 +55,18 @@ This results in:
  - Langmuir probe ball 4 - sphere of radius 1/42, centered at (1, -10/7, 5/7)
 '''
 
-
 def addBody(space, length, front_x):
     x, y, z = space.shape
     space = addCuboid(space, front_x, -2/7 * length + y/2, -5/7 * length + z/2, length   , 4/7 * length, 10/7 * length)
     space = addCuboid(space, front_x, -6/7 * length + y/2, -5/7 * length + z/2, length/21, 4/7 * length, 10/7 * length)
     space = addCuboid(space, front_x,  2/7 * length + y/2, -5/7 * length + z/2, length/21, 4/7 * length, 10/7 * length)
+    return space
+
+def add2DBody(space, length, front_x):
+    x, y, z = space.shape
+    space = addCuboid(space, front_x, -2/7 * length + y/2, 2, length   , 4/7 * length, z - 5)
+    space = addCuboid(space, front_x, -6/7 * length + y/2, 2, length/21, 4/7 * length, z - 5)
+    space = addCuboid(space, front_x,  2/7 * length + y/2, 2, length/21, 4/7 * length, z - 5)
     return space
 
 def addLangmuirProbes(space, length, front_x):
@@ -79,7 +84,9 @@ if __name__ == "__main__":
         print("x, y, z - size of the simulation domain")
         print("length - length of the satellite in x-axis")
         print("front_x - x-coordinate of the front of the satellite")
-        print("mode: \n\t0 - only the main body, \n\t1 - main body and Langmuir probes")
+        print("mode:\n\t0 - only the main body,\n\t1 - main body and Langmuir probes," +
+              "\n\t2 - sphere\n\t3 - only the main body reaching 2 cell from z margins" +
+               "\n\tany other number - no body")
         print("\t2 - simple sphere")
         print("filename - relative path of the output file")
         sys.exit(1)
@@ -97,6 +104,8 @@ if __name__ == "__main__":
         space = addLangmuirProbes(space, length, front_x)
     if mode == 2:
         space = addSphere(space, length, int(x) // 2 + front_x, int(y) // 2, int(z) // 2)
+    if mode == 3:
+        space = add2DBody(space, length, front_x)
 
     # Python and C have different conventions for the order of axes
     space = space.swapaxes(0, 2)

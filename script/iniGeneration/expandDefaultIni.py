@@ -227,7 +227,7 @@ def generateCollisionsPart(collisions_params):
     # Collision frequency for charge exchange collisions
     collFrqCex = overwrite(collisions_params, "collFrqCex", 1.45)
     # Collision frequency for ion elastic collisions
-    collFreIonElastic = overwrite(collisions_params, "collFreIonElastic", 3.674)
+    collFreIonElastic = overwrite(collisions_params, "collFrqIonElastic", 3.674)
     # Collision frequency for electron elastic collisions
     collFrqElectronElastic = overwrite(collisions_params, "collFrqElectronElastic", 12.48)
     # Charge exchange collisional cross section
@@ -241,14 +241,13 @@ def generateCollisionsPart(collisions_params):
     # If using functional form of crossections e.g mccGetPmax...() freq propto v,
     # this is experimental and overwrites above collfreqs, if using method "mccFunctionalCrossect".
     # sigma_adj = a * exp(- b * v^2)
-    # a parameter normalised by multiplying by Debye length and ion number density
-    # b parameter normalised by dividing by the thermal velocity of electrons squared
-    # (todo: update b values to something reasonable)
-    CEX_a = overwrite(collisions_params, "CEX_a", 5.25e-7)
+    # a parameter given in m^2?
+    # b parameter given in s^2/m^2?
+    CEX_a = overwrite(collisions_params, "CEX_a", 0.00241)
     CEX_b = overwrite(collisions_params, "CEX_b", 57.06)
-    ion_elastic_a = overwrite(collisions_params, "ion_elastic_a", 5.78e-7)
+    ion_elastic_a = overwrite(collisions_params, "ion_elastic_a", 0.00081)
     ion_elastic_b = overwrite(collisions_params, "ion_elastic_b", 150.0)
-    electron_a = overwrite(collisions_params, "electron_a", 4.2e-7)
+    electron_a = overwrite(collisions_params, "electron_a", 0.001205)
     electron_b = overwrite(collisions_params, "electron_b", 1.2758)
     return f'''[collisions]
 electronEnergyMethod    = {electronEnergyMethod}

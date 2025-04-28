@@ -13,9 +13,9 @@ import numpy as np
 import sys
 
 def uniform(x, y, z, value, filename):
-    field = np.ones((x, y, z), dtype=np.float32) * value
+    field = np.ones((x, y, z), dtype=np.float64) * value
     file = h5py.File(filename, "w")
-    file.create_dataset("n=0.0", data=field, dtype="float32")
+    file.create_dataset("n=0.0", data=field, dtype="float64")
     file.flush()
     file.close()
 

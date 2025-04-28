@@ -2321,7 +2321,6 @@ static void oCollCustomRhoMode(dictionary *ini)
 	MccVars *mccVars = mccAlloc(ini, units, mpiInfo);
 
 	PincObject *obj = objoAlloc(ini, mpiInfo, units); // for capMatrix - objects
-	// TODO: look into multigrid E,rho,rhoObj
 
 	// Creating a neighbourhood in the rho to handle migrants
 	gCreateNeighborhood(ini, mpiInfo, rho);
@@ -2352,9 +2351,6 @@ static void oCollCustomRhoMode(dictionary *ini)
 	xyCreateDataset(history, "/current/ions/dataset");
 	xyCreateDataset(history, "/potential/dataset");
 
-	// Add more time series to history if you want
-	// xyCreateDataset(history,"/group/group/dataset");
-
 	/*
 	 * INITIAL CONDITIONS
 	 */
@@ -2365,9 +2361,6 @@ static void oCollCustomRhoMode(dictionary *ini)
 	// Initalize particles
 	pPosUniformCell(ini, rho, pop, rng);
 	double maxVel = iniGetDouble(ini, "population:maxVel");
-
-	// Perturb particles
-	// pPosPerturb(ini, pop, mpiInfo);
 
 	// add influx of new particles on boundary
 	pPurgeGhost(pop, rho);
@@ -2435,16 +2428,14 @@ static void oCollCustomRhoMode(dictionary *ini)
 	//- NEUTRALS - initialization - end
 	//-----------------------------------
 
+	Timer *t = tAlloc(mpiInfo->mpiRank);
+	int nTimeSteps = iniGetInt(ini, "time:nTimeSteps");
 	/*
 	 * TIME LOOP
 	 */
 
-	Timer *t = tAlloc(mpiInfo->mpiRank);
-
 	// n should start at 1 since that's the timestep we have after the first
 	// iteration (i.e. when storing H5-files).
-	int nTimeSteps = iniGetInt(ini, "time:nTimeSteps");
-
 	for (int n = 1; n <= nTimeSteps; n++)
 	{
 
@@ -2483,8 +2474,6 @@ static void oCollCustomRhoMode(dictionary *ini)
 		gHaloOp(addSlice, rho_e, mpiInfo, FROMHALO);
 		gHaloOp(addSlice, rho_i, mpiInfo, FROMHALO);
 
-		// Keep writing Rho here.
-
 		// Add object charge to rho.
 		gAddTo(rho, rhoObj);
 
@@ -2517,8 +2506,7 @@ static void oCollCustomRhoMode(dictionary *ini)
 
 		// Example of writing another dataset to history.xy.h5
 		// xyWrite(history,"/group/group/dataset",(double)n,value,MPI_SUM);
-
-		if (/*n >= nTimeSteps - 1000 && */n % 1000 == 0)
+		if (/*n >= nTimeSteps - 1000 && */n % 100 == 0/* || n + 1000 >= nTimeSteps*/)
 		{
 			gWriteH5(rho, mpiInfo, (double)n);
 			gWriteH5(rho_e, mpiInfo, (double)n);
@@ -2533,9 +2521,7 @@ static void oCollCustomRhoMode(dictionary *ini)
 		xyWrite(history, "/potential/dataset", (double)n, units->potential * (*obj->bias), MPI_MAX);
 	}
 
-	// if(mpiInfo->mpiRank==0) {
 	tMsg(t->total, "Time spent: ");
-	//}
 
 	/*
 	 * FINALIZE PINC VARIABLES
