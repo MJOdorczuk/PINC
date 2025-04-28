@@ -119,8 +119,7 @@ static void mccNormalize(dictionary *ini, const Units *units)
 	// int nSpecies = iniGetInt(ini, "collisions:nSpeciesNeutral");
 
 	iniScaleDouble(ini, "collisions:neutralMass", units->weights[1] / units->mass);
-	iniScaleDouble(ini, "collisions:numberDensityNeutrals",
-						1.0 / (units->weights[1] * units->density));
+	iniScaleDouble(ini, "collisions:numberDensityNeutrals", 1.0 / units->density);
 	iniScaleDouble(ini, "collisions:neutralDrift", 1.0 / units->velocity);
 	iniScaleDouble(ini, "collisions:thermalVelocityNeutrals", 1.0 / units->velocity);
 
