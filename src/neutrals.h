@@ -60,6 +60,9 @@ typedef struct{
 	Grid *vth; // neutral species thermal velocity
 	Grid **vel; // neutral species velocity
 	int nDims; // number of dimensions (TODO: is it not redundant?)
+	double max_nt; // maximum normalised neutral number density
+	double max_vth; // maximum normalsied neutral thermal velocity
+	double *max_vel; // maximum normalised neutral drift velocity in each dimension
 } NeutralField;
 
 /**

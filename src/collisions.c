@@ -288,6 +288,46 @@ static double mccGetMaxVel(const Population *pop, int species, MccVars *mccVars)
 	return maxVelocity;
 }
 
+// Maximum possible relative velocity between a member of the particle population
+// and the neutral background
+// Random sampling is highly inefficient, why not just to assume the random values
+// to be pessimistic?
+//
+// Comment in relation to mccGetMaxVelTran
+static double mccGetMaxVelRelative(const Population *pop, int species, MccVars *mccVars)
+{
+	// iterate over pop and keep max velocity, uses
+	double *vel = pop->vel;
+	double maxVal = 0;
+	double newVal = 0;
+	double vth = 0;
+	int nDims = pop->nDims;
+	double vx, vy, vz;
+	double drift[3];
+
+	long int iStart = pop->iStart[species];
+	long int iStop = pop->iStop[species];
+	for (int i = iStart; i < iStop; i++)
+	{
+		double x = pop->pos[i * nDims], y = pop->pos[i * nDims + 1], z = pop->pos[i * nDims + 2];
+		mccGetLocalDrift(x, y, z, mccVars, drift);
+		vth = mccGetLocalThermalVelocity(x, y, z, mccVars);
+		vx = vel[i * nDims] - drift[0];
+		vy = vel[i * nDims + 1] - drift[1];
+		vz = vel[i * nDims + 2] - drift[2];
+
+		// True velocity from the thermal movement is limited to 5 times the vth
+		// In three dimensions thermal velocity is sqrt(3) times larger
+		// In total (5 sqrt(3))^2 = 75
+		newVal = vx * vx + vy * vy + vz * vz + 75 * vth * vth;
+		if (newVal > maxVal)
+		{
+			maxVal = newVal;
+		}
+	}
+	return sqrt(maxVal);
+}
+
 static double mccGetMaxVelTran(const Population *pop, int species, const gsl_rng *rng, double NvelThermal, MccVars *mccVars)
 {
 
@@ -454,6 +494,51 @@ void mccFreeVars(MccVars *mccVars)
 	free(mccVars);
 }
 
+void mccGetMaxValues(MccVars *mccVars)
+{
+	// Assumed to be the same for rho, v_drift and v_th
+	long int *sizeProd = mccVars->neutralField->rho->sizeProd;
+	int rank = mccVars->neutralField->rho->rank;
+	double *rho = mccVars->neutralField->rho->val;
+	double maxrho = 0;
+	double *vth = mccVars->neutralField->vth->val;
+	double maxvth = 0;
+	double **v = malloc(mccVars->neutralField->nDims * sizeof(double *));
+	double *maxv = malloc(mccVars->neutralField->nDims * sizeof(double));
+	for (int d = 0; d < mccVars->neutralField->nDims; d++)
+	{
+		v[d] = mccVars->neutralField->vel[d]->val;
+		maxv[d] = 0;
+	}
+	for (int i = 0; i < sizeProd[rank]; i++)
+	{
+		if (rho[i] > maxrho)
+		{
+			maxrho = rho[i];
+		}
+		if (vth[i] > maxvth)
+		{
+			maxvth = vth[i];
+		}
+		for (int d = 0; d < mccVars->neutralField->nDims; d++)
+		{
+			if (fabs(v[d][i]) > fabs(maxv[d]))
+			{
+				maxv[d] = v[d][i];
+			}
+		}
+	}
+	// So far only a single neutral species is available
+	// TODO: Change it to multispecies
+	mccVars->neutralField->max_nt = maxrho * mccVars->neutralField->nt[0];
+	mccVars->neutralField->max_vth = maxvth * mccVars->NvelThermal;
+	for (int d = 0; d < mccVars->neutralField->nDims; d++)
+	{
+		mccVars->neutralField->max_vel[d] = maxv[d] * mccVars->neutralDrift[d];
+	}
+	free(v);
+}
+
 /*************************************************
  *		Max collision probability Functions
  ************************************************/
@@ -461,9 +546,9 @@ void mccFreeVars(MccVars *mccVars)
 static void mccGetPmaxElectronConstantFrq(const dictionary *ini,
 										  MccVars *mccVars, Population *pop, MpiInfo *mpiInfo)
 {
-	//
 	double collFrqElectronElastic = mccVars->collFrqElectronElastic;
 
+	// TODO: is it really necessary?
 	double max_v = mccGetMaxVel(pop, 0, mccVars); // 2.71828*thermalVel; // e*thermalVel, needs to be max_velocity function
 	// msg(STATUS,"maxVelocity Electron =  %f", max_v);
 	mccVars->pMaxElectron = 1 - exp(-((collFrqElectronElastic)));
@@ -480,6 +565,7 @@ static void mccGetPmaxIonConstantFrq(const dictionary *ini, MccVars *mccVars,
 	//
 	double collFrqIonElastic = mccVars->collFrqIonElastic;
 	double collFrqCEX = mccVars->collFrqCex;
+	// TODO: is it really necessary?
 	double max_v = mccGetMaxVel(pop, 1, mccVars); // 2.71828*thermalVel; // e*thermalVel, needs to be max_velocity function
 	// msg(STATUS,"maxVelocity Ion =  %f", max_v);
 	mccVars->pMaxIon = 1 - exp(-((collFrqIonElastic + collFrqCEX)));
@@ -583,10 +669,10 @@ static void mccGetPmaxIonStatic(const dictionary *ini, MccVars *mccVars,
 	// to determine maximum collision probability
 
 	double NvelThermal = mccVars->NvelThermal;
-	double nt = mccGetMaxDens(mccVars, 0);
+	double nt = mccVars->neutralField->max_nt;
 	double StaticSigmaCEX = mccVars->mccSigmaCEX;
 	double StaticSigmaIonElastic = mccVars->mccSigmaIonElastic;
-	double max_v = mccGetMaxVelTran(pop, 1, rng, NvelThermal, mccVars);
+	double max_v = mccGetMaxVelRelative(pop, 1, mccVars);
 	// printf("StaticSigmaCEX = %f \n",StaticSigmaCEX);
 	// double max_v = mccGetMaxVel(pop,1);
 	mccVars->maxFreqIon = (StaticSigmaCEX + StaticSigmaIonElastic) * max_v * nt;
@@ -606,9 +692,11 @@ static void mccGetPmaxElectronStatic(const dictionary *ini,
 	// Faster static version. uses static cross sections
 	// to determine maximum collision probability
 
-	double nt = mccGetMaxDens(mccVars, 0);
+	double nt = mccVars->neutralField->max_nt;
 
 	double StaticSigmaElectronElastic = mccVars->mccSigmaElectronElastic;
+	// I know that electrons are much much faster than neutrals, but can we truly
+	// ignore the neutral drift and thermal velocity here?
 	double max_v = mccGetMaxVel(pop, 0, mccVars);
 	// double min_v = mccGetMinVel(pop,0);
 	mccVars->maxFreqElectron = StaticSigmaElectronElastic * max_v * nt;
@@ -1745,6 +1833,8 @@ static void mccMode(dictionary *ini)
 	 */
 
 	MccVars *mccVars = mccAlloc(ini, units, mpiInfo);
+	// No external data loaded, all the values are already set
+	mccGetMaxValues(mccVars);
 
 	// using Boris algo
 	int nSpecies = pop->nSpecies;
@@ -2044,6 +2134,8 @@ static void oCollMode(dictionary *ini)
 	Grid *phi = gAlloc(ini, SCALAR, mpiInfo);
 	void *solver = solverAlloc(ini, rho, phi, mpiInfo);
 	MccVars *mccVars = mccAlloc(ini, units, mpiInfo);
+	// No external data loaded, all the values are already set
+	mccGetMaxValues(mccVars);
 
 	PincObject *obj = objoAlloc(ini, mpiInfo, units); // for capMatrix - objects
 	// TODO: look into multigrid E,rho,rhoObj
@@ -2422,6 +2514,8 @@ static void oCollCustomRhoMode(dictionary *ini)
 		gOpenH5(ini, mccVars->neutralField->vel[d], mpiInfo, units, units->velocity, buffer);
 		gReadH5(mccVars->neutralField->vel[d], 0.0);
 	}
+	// Only valid after loading the external fields
+	mccGetMaxValues(mccVars);
 
 	//-----------------------------------
 	//- NEUTRALS - initialization - end

@@ -45,6 +45,20 @@ funPtr neutTest_set();
 
 /**
  * @brief Null collision method with predefined neutral species distribution
+ *
+ * Requires rhoNeutral.grid.h5, v0Neutral.grid.h5, v1Neutral.grid.h5
+ * v2Neutral.grid.h5 and vthNeutral.grid.h5 files in the /data directory
+ * All the values will be multiplied by the parameters given in the .ini file
+ * The fields should be normalised to those parameters
+ *
+ * rhoNeutral.grid.h5 contains neutral number density data
+ * v0Neutral.grid.h5 containst neutral drift velocity in the 0th dimension
+ * v1Neutral.grid.h5 containst neutral drift velocity in the 1st dimension
+ * v2Neutral.grid.h5 containst neutral drift velocity in the 2nd dimension
+ * vthNeutral.grid.h5 containst neutral thermal velocity
+ *
+ * The fields must be the same size as the numerical domain. The values shall
+ * be in float64 format
  */
 funPtr oCollCustomRhoMode_set();
 
@@ -69,6 +83,19 @@ funPtr mccCollisionsOff_set(dictionary *ini);
  */
 MccVars *mccAlloc(const dictionary *ini, const Units *units, const MpiInfo *mpiInfo);
 
+/**
+ * @brief frees the Monte Carlo Collision (MCC) module variables.
+ * @param *mccVars 	pointer to mcc specific variables
+ */
+void mccFreeVars(MccVars *mccVars);
+
+/**
+ * @brief Saves the maximum density, thermal velocity and drift velocity values for the neutral species
+ * @param *mccVars 	pointer to mcc specific variables
+ *
+ * MCC variables need to be initialised and normalised before
+ */
+void mccGetMaxValues(MccVars *mccVars);
 
 //
 // /**
