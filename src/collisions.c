@@ -293,7 +293,7 @@ static double mccGetMaxVel(const Population *pop, int species, MccVars *mccVars)
 // Random sampling is highly inefficient, why not just to assume the random values
 // to be pessimistic?
 //
-// Comment in relation to mccGetMaxVelTran
+// Comment in relation to the old mccGetMaxVelTran
 static double mccGetMaxVelRelative(const Population *pop, int species, MccVars *mccVars)
 {
 	// iterate over pop and keep max velocity, uses
@@ -327,57 +327,6 @@ static double mccGetMaxVelRelative(const Population *pop, int species, MccVars *
 	}
 	return sqrt(maxVal);
 }
-
-static double mccGetMaxVelTran(const Population *pop, int species, const gsl_rng *rng, double NvelThermal, MccVars *mccVars)
-{
-
-	// iterate over pop and keep max velocity, uses
-	double *vel = pop->vel;
-	double MaxVelocity = 0;
-	double NewVelocity = 0;
-	int nDims = pop->nDims;
-	double vx, vy, vz;
-	double drift[3];
-
-	long int iStart = pop->iStart[species];
-	long int iStop = pop->iStop[species];
-	for (int i = iStart; i < iStop; i++)
-	{
-		double x = pop->pos[i * nDims], y = pop->pos[i * nDims + 1], z = pop->pos[i * nDims + 2];
-		mccGetLocalDrift(x, y, z, mccVars, drift);
-		vx = vel[i * nDims] - gsl_ran_gaussian_ziggurat_limited(rng, NvelThermal) - drift[0]; // maxwellian dist?
-		vy = vel[i * nDims + 1] - gsl_ran_gaussian_ziggurat_limited(rng, NvelThermal) - drift[1]; // yes, gaussian in 3 dim
-		vz = vel[i * nDims + 2] - gsl_ran_gaussian_ziggurat_limited(rng, NvelThermal) - drift[2]; // is maxwellian
-
-		NewVelocity = sqrt(vx * vx + vy * vy + vz * vz);
-		if (NewVelocity > MaxVelocity)
-		{
-			MaxVelocity = NewVelocity;
-		}
-	}
-	return MaxVelocity;
-}
-
-//
-// static double mccGetMinVel(const Population *pop, int species){
-//
-// 	// iterate over pop and keep min velocity
-// 	double *vel = pop->vel;
-// 	double MinVelocity = 100000000000000;
-// 	double NewVelocity = 0;
-// 	int nDims = pop->nDims;
-//
-// 	long int iStart = pop->iStart[species];
-// 	long int iStop  = pop->iStop[species];
-// 	for(int i=iStart; i<iStop; i++){
-// 		NewVelocity = sqrt(vel[i*nDims]*vel[i*nDims]+vel[i*nDims+1]\ //
-// 			*vel[i*nDims+1]+vel[i*nDims+2]*vel[i*nDims+2]);
-// 		if(NewVelocity<MinVelocity){
-// 			MinVelocity=NewVelocity;
-// 		}
-// 	}
-// 	return MinVelocity;
-// }
 
 /*************************************************
  *		Inline functions
@@ -668,7 +617,6 @@ static void mccGetPmaxIonStatic(const dictionary *ini, MccVars *mccVars,
 	// Faster static version. uses static cross sections
 	// to determine maximum collision probability
 
-	double NvelThermal = mccVars->NvelThermal;
 	double nt = mccVars->neutralField->max_nt;
 	double StaticSigmaCEX = mccVars->mccSigmaCEX;
 	double StaticSigmaIonElastic = mccVars->mccSigmaIonElastic;
@@ -692,7 +640,7 @@ static void mccGetPmaxElectronStatic(const dictionary *ini,
 	// Faster static version. uses static cross sections
 	// to determine maximum collision probability
 
-	double nt = mccVars->neutralField->max_nt;
+	double nt = mccGetMaxDens(mccVars, 0);
 
 	double StaticSigmaElectronElastic = mccVars->mccSigmaElectronElastic;
 	// I know that electrons are much much faster than neutrals, but can we truly

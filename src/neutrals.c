@@ -608,12 +608,10 @@ NeutralField *gNeutralFieldAlloc(const dictionary *ini, const MpiInfo *mpiInfo)
 	gAdd(field->rho, 1);
 
 	// Set uniform thermal velocity
-	double vth = iniGetDouble(ini, "collisions:thermalVelocityNeutrals");
 	gZero(field->vth);
 	gAdd(field->vth, 1);
 
 	// Set uniform velocity
-	double *vel = iniGetDoubleArr(ini, "collisions:neutralDrift", field->nDims);
 	for (int d = 0; d < field->nDims; d++)
 	{
 		field->vel[d] = gAlloc(ini, SCALAR, mpiInfo);
