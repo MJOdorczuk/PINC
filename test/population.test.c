@@ -4,7 +4,7 @@
  * @author		Sigvald Marholm <sigvaldm@fys.uio.no>,
  */
 
-#include "pinc.h"
+#include "core.h"
 #include "test.h"
 #include <math.h>
 
@@ -12,11 +12,13 @@ static int testPCut(){
 
 	dictionary *ini = iniGetDummy();
 
+	iniparser_set(ini,"population:nSpecies","2");
 	iniparser_set(ini,"population:nAlloc","10,10");
 	iniparser_set(ini,"population:nParticles","0,0");
-	iniparser_set(ini,"population:q","-1,1");
-	iniparser_set(ini,"population:m","1,100");
-	Population *pop = pAlloc(ini);
+	iniparser_set(ini,"population:charge","-1,1");
+	iniparser_set(ini,"population:mass","1,100");
+	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Population *pop = pAlloc(ini,mpiInfo);
 
 	double posV[] = {0,1,2};
 	double velV[] = {0,10,20};

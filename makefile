@@ -63,7 +63,7 @@ local: version $(EXEC).local cleantestdata doc
 test: version $(EXEC).test cleantestdata doc
 	@echo "Running Unit Tests"
 	@echo $(TEST)
-	@./$(EXEC) input.ini
+	@./$(EXEC) test/test.ini
 
 $(EXEC).test: $(TODIR)/main.test.o $(OBJ) $(TESTOBJ) $(LIBOBJ)
 	@echo "Linking Unit Tests"

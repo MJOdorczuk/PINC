@@ -19,6 +19,11 @@ int main(int argc, char *argv[]){
 	testPopulation();
 	testPusher();
 	testMultigrid();
+	testObject();
+	testCollisions();
+	testSpectral();
+	testUnits();
+	testNeutrals();
 	utSummary();
 
 	MPI_Finalize();

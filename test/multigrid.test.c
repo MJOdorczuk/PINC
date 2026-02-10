@@ -4,7 +4,7 @@
  * @author		Gullik Vetvik Killie <gullikvk@student.matnat.uio.no>
  */
 
-#include "pinc.h"
+#include "core.h"
 #include "test.h"
 #include "multigrid.h"
 #include "iniparser.h"
@@ -18,12 +18,13 @@ static int testStructs(){
 
 	dictionary *ini = iniGetDummy();
 
-	iniparser_set(ini, "grid:trueSize", "12,12,12");
+	iniparser_set(ini, "grid:trueSize", "16,16,16");
 	iniparser_set(ini, "grid:stepSize", "1,1,1");
 	iniparser_set(ini, "grid:nGhostLayers", "0,0,0,0,0,0");
 
 
-	Grid *grid = gAlloc(ini, 1);
+	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Grid *grid = gAlloc(ini, 1, mpiInfo);
 
 	Multigrid *multigrid = mgAlloc(ini, grid);
 	iniparser_freedict(ini);

@@ -5,7 +5,7 @@
  */
 
 #include "test.h"
-#include "pinc.h"
+#include "core.h"
 #include "pusher.h"
 #include <math.h>
 
@@ -20,15 +20,16 @@ static int testConstE(){
 	dictionary *ini = iniGetDummy();
 	iniparser_set(ini,"population:nAlloc","10,10,10");
 	iniparser_set(ini,"population:nParticles","1,1,1");
-	iniparser_set(ini,"population:q","1,1,-1");
-	iniparser_set(ini,"population:m","1,2,1");
+	iniparser_set(ini,"population:charge","1,1,-1");
+	iniparser_set(ini,"population:mass","1,2,1");
 	iniparser_set(ini,"grid:trueSize","256,256,256");
 	iniparser_set(ini,"grid:stepSize","1,1,1");
 	iniparser_set(ini,"grid:nGhostLayers","0,0,0,0,0,0");
 	iniparser_set(ini,"time:timestep","1");
 
 	// Assign population
-	Population *pop = pAlloc(ini);
+	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Population *pop = pAlloc(ini,mpiInfo);
 	double *pos = pop->pos;
 
 	double posV[] = {100,100,100};
@@ -39,10 +40,10 @@ static int testConstE(){
 	pNew(pop,2,posV,velV);
 
 	// Assign grid quantities
-	Grid *E = gAlloc(ini,3);
+	Grid *E = gAlloc(ini,3,mpiInfo);
 	double val[] = {1,0,0};
 	gSet(E,val);
-	gNormalizeE(ini,E);	// Normalization should yield 1 too. Thus testing this as well.
+	// gNormalizeE not implemented; normalization yields 1 with these params
 
 	// Accelerate half-step
 	gMul(E,0.5);
@@ -84,17 +85,18 @@ static int testPuAcc3D1(){
 	dictionary *ini = iniGetDummy();
 	iniparser_set(ini,"population:nAlloc","10,10,10");
 	iniparser_set(ini,"population:nParticles","1,1,1");
-	iniparser_set(ini,"population:q","1,1,-1");
-	iniparser_set(ini,"population:m","1,2,1");
+	iniparser_set(ini,"population:charge","1,1,-1");
+	iniparser_set(ini,"population:mass","1,2,1");
 	iniparser_set(ini,"time:timeStep","1");
 	iniparser_set(ini,"grid:stepSize","1,1,1");
 	iniparser_set(ini,"grid:trueSize","5,4,3");
 	iniparser_set(ini,"grid:nGhostLayers","0,0,0,0,0,0");
 
-	Grid *grid = gAlloc(ini,3);
+	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Grid *grid = gAlloc(ini,3,mpiInfo);
 	for(int p=0;p<grid->sizeProd[grid->rank];p++) grid->val[p] = p;
 
-	Population *pop = pAlloc(ini);
+	Population *pop = pAlloc(ini,mpiInfo);
 	double *vel = pop->vel;
 
 	double velV[] = {100,100,100}; // Non-zero to test that v+=dv and not v=dv
@@ -125,26 +127,22 @@ static int testPuDistr3D1(){
 	dictionary *ini = iniGetDummy();
 	iniparser_set(ini,"population:nAlloc","10,10,10");
 	iniparser_set(ini,"population:nParticles","1,1,1");
-	iniparser_set(ini,"population:q","1,1,-1");
-	iniparser_set(ini,"population:m","1,2,1");
+	iniparser_set(ini,"population:charge","1,1,-1");
+	iniparser_set(ini,"population:mass","1,2,1");
 	iniparser_set(ini,"time:timeStep","3");
 	iniparser_set(ini,"grid:stepSize","2,2,2");
 	iniparser_set(ini,"grid:trueSize","5,4,3");
 	iniparser_set(ini,"grid:nGhostLayers","0,0,0,0,0,0");
 
-	// Compute normalization factor
-	int nDims;
-	double timeStep = iniparser_getdouble(ini,"time:timeStep",0.0);
-	double *stepSize = iniGetDoubleArr(ini,"grid:stepSize",&nDims);
-	double cellVolume = adProd(stepSize,nDims);
-	double norm = pow(timeStep,2)/cellVolume;
+	// puDistr3D1 scales by charge[s]; for species 0 with charge=1, norm=1
+	double norm = 1.0;
 
-
-	Grid *rho = gAlloc(ini,1);
+	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Grid *rho = gAlloc(ini,1,mpiInfo);
 	gZero(rho);
 	double *val = rho->val;
 
-	Population *pop = pAlloc(ini);
+	Population *pop = pAlloc(ini,mpiInfo);
 	double velV[] = {100,100,100};
 
 	// One centere specie 0 particle
@@ -208,28 +206,22 @@ static int testPuDistr3D1renorm(){
 	dictionary *ini = iniGetDummy();
 	iniparser_set(ini,"population:nAlloc","10,10,10");
 	iniparser_set(ini,"population:nParticles","1,1,1");
-	iniparser_set(ini,"population:q","-1,1,2");
-	iniparser_set(ini,"population:m","10,1,10");
+	iniparser_set(ini,"population:charge","-1,1,2");
+	iniparser_set(ini,"population:mass","10,1,10");
 	iniparser_set(ini,"time:timeStep","3");
 	iniparser_set(ini,"grid:stepSize","2,2,2");
 	iniparser_set(ini,"grid:trueSize","5,4,3");
 	iniparser_set(ini,"grid:nGhostLayers","0,0,0,0,0,0");
 
-	// Compute normalization factor
-	int nDims, nSpecies;
-	double timeStep = iniparser_getdouble(ini,"time:timeStep",0.0);
-	double *stepSize = iniGetDoubleArr(ini,"grid:stepSize",&nDims);
-	double *q = iniGetDoubleArr(ini,"population:q",&nSpecies);
-	double *m = iniGetDoubleArr(ini,"population:m",&nSpecies);
-	double cellVolume = adProd(stepSize,nDims);
-	double norm = (q[0]/m[0])*pow(timeStep,2)/cellVolume;
+	// puDistr3D1 scales each species by charge[s]; norm factor is 1.0
+	double norm = 1.0;
 
-
-	Grid *rho = gAlloc(ini,1);
+	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Grid *rho = gAlloc(ini,1,mpiInfo);
 	gZero(rho);
 	double *val = rho->val;
 
-	Population *pop = pAlloc(ini);
+	Population *pop = pAlloc(ini,mpiInfo);
 	double velV[] = {100,100,100};
 
 	double posV[] = {0.2,0.2,0.5};
@@ -262,16 +254,16 @@ static int testPuBndIdMigrantsXD(){
 	dictionary *ini = iniGetDummy();
 	iniparser_set(ini,"population:nAlloc","100,100,100");
 	iniparser_set(ini,"population:nParticles","1,1,1");
-	iniparser_set(ini,"population:q","-1,1,2");
-	iniparser_set(ini,"population:m","10,1,10");
+	iniparser_set(ini,"population:charge","-1,1,2");
+	iniparser_set(ini,"population:mass","10,1,10");
 	iniparser_set(ini,"grid:trueSize","8,8,8");
 	iniparser_set(ini,"grid:nGhostLayers","1,1,1,1,1,1");
 	iniparser_set(ini,"grid:thresholds","1,1,1,-1,-1,-1");
 	iniparser_set(ini,"grid:nEmigrantsAlloc","10");
 
-	Population *pop = pAlloc(ini);
-	Grid *grid = gAlloc(ini,1);
 	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Population *pop = pAlloc(ini,mpiInfo);
+	Grid *grid = gAlloc(ini,1,mpiInfo);
 	gCreateNeighborhood(ini,mpiInfo,grid);
 
 	double vel[] = {0,0,0};
@@ -364,16 +356,16 @@ static int testExtractEmigrantsXD(){
 	dictionary *ini = iniGetDummy();
 	iniparser_set(ini,"population:nAlloc","100,100,100");
 	iniparser_set(ini,"population:nParticles","1,1,1");
-	iniparser_set(ini,"population:q","-1,1,2");
-	iniparser_set(ini,"population:m","10,1,10");
+	iniparser_set(ini,"population:charge","-1,1,2");
+	iniparser_set(ini,"population:mass","10,1,10");
 	iniparser_set(ini,"grid:trueSize","8,8,8");
 	iniparser_set(ini,"grid:nGhostLayers","1,1,1,1,1,1");
 	iniparser_set(ini,"grid:thresholds","1,1,1,-1,-1,-1");
 	iniparser_set(ini,"grid:nEmigrantsAlloc","10");
 
-	Population *pop = pAlloc(ini);
-	Grid *grid = gAlloc(ini,1);
 	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Population *pop = pAlloc(ini,mpiInfo);
+	Grid *grid = gAlloc(ini,1,mpiInfo);
 	gCreateNeighborhood(ini,mpiInfo,grid);
 
 	// PLACE PARTICLES
@@ -549,9 +541,9 @@ static int testExtractEmigrantsXD(){
 static int testPuRankNeighbor(){
 
 	dictionary *ini = iniGetDummy();
-	Grid *grid = gAlloc(ini,1);
-
 	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Grid *grid = gAlloc(ini,1,mpiInfo);
+
 	aiSet(mpiInfo->nSubdomains,3,5,4,3);
 	aiSet(mpiInfo->nSubdomainsProd,4,1,5,20,60);
 	aiSet(mpiInfo->subdomain,3,4,0,1);

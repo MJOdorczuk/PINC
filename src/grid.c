@@ -1717,7 +1717,7 @@ void gCreateNeighborhood(const dictionary *ini, MpiInfo *mpiInfo, Grid *grid){
 
 	// upper thresholds should be counted from upper edge
 	for(int i=nDims;i<2*nDims;i++){
-		thresholds[i] = (size[i%nDims+1]-1) - thresholds[i];
+		thresholds[i] = size[i%nDims+1] + thresholds[i];
 	}
 
 	// ALLOCATE SIMPLE ARRAYS AND STORE IN STRUCT

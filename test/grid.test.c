@@ -5,7 +5,7 @@
  *				Gullik Vetvik Killie <gullikvk@student.matnat.uio.no>
  */
 
-#include "pinc.h"
+#include "core.h"
 #include "test.h"
 #include "iniparser.h"
 #include <math.h>
@@ -19,7 +19,8 @@ Grid *loadGrid543(int nValues){
 	iniparser_set(ini,"grid:stepSize","1,1,1");
 	iniparser_set(ini,"grid:nGhostLayers","0,0,0,0,0,0");
 
-	Grid *grid = gAlloc(ini,nValues);
+	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Grid *grid = gAlloc(ini,nValues,mpiInfo);
 	long int nElements = grid->sizeProd[grid->rank];
 	for(int p=0;p<nElements;p++) grid->val[p] = p;
 
@@ -34,18 +35,15 @@ static int testGAlloc(){
 	int *size = grid->size;
 	long int *sizeProd = grid->sizeProd;
 	int *nGhostLayers = grid->nGhostLayers;
-	double *stepSize = grid->stepSize;
 
 	int expectedSize[] = {2,5,4,3};
 	long int expectedSizeProd[] = {1,2,10,40,120};
 	int expectedNGhostLayers[] = {0,0,0,0,0,0};
-	double expectedStepSize[] = {1,1,1,1};
 
 	utAssert(grid->rank==4,"wrong rank assigned by gAlloc");
 	utAssert(aiEq(size        ,expectedSize        ,4),"wrong size assigned by gAlloc");
 	utAssert(alEq(sizeProd    ,expectedSizeProd    ,5),"wrong sizeProd assigned by gAlloc");
 	utAssert(aiEq(nGhostLayers,expectedNGhostLayers,6),"wrong nGhostLayers assigned by gAlloc");
-	utAssert(adEq(stepSize    ,expectedStepSize    ,4,0),"wrong stepSize assigned by gAlloc");
 
 	return 0;
 
@@ -270,8 +268,8 @@ static int testGCreateNeighborhood(){
 	iniparser_set(ini,"grid:thresholds","1.5,1.5,1.0,-1.5,-1.5,-1.0");
 	iniparser_set(ini,"grid:nEmigrantsAlloc","1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27");
 
-	Grid *grid = gAlloc(ini,1);
 	MpiInfo *mpiInfo = gAllocMpi(ini);
+	Grid *grid = gAlloc(ini,1,mpiInfo);
 
 	aiSet(mpiInfo->nSubdomains,3,5,4,3);
 	aiSet(mpiInfo->subdomain,3,3,1,1);
