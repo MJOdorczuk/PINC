@@ -38,7 +38,8 @@
 	    mach_timebase_info(&timebase);
 
 		uint64_t clock = mach_absolute_time();
-		uint64_t nanosecs = clock * (uint64_t)timebase.numer / (uint64_t)timebase.denom;
+		uint64_t nanosecs = clock * 
+							(uint64_t)timebase.numer / (uint64_t)timebase.denom;
 
 		return nanosecs;
 	}

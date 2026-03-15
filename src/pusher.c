@@ -25,7 +25,8 @@
  * @param[in,out]	integer		Integer part of particle position
  * @param[in,out]	decimal		Decimal part of particle position
  * @param[in,out]	complement	One minus decimal part of particle position
- * @param			mul			Multiple in order to increment one in a certain direction (from sizeProd, used in recursive algorithm)
+ * @param			mul			Multiple in order to increment one in a certain direction 
+ (from sizeProd, used in recursive algorithm)
  * @param			lastMul		Last mul to use in recursive algorithm (equals sizeProd[1])
  * @param			factor		Multiplicative factor propagated forward in recursion
  * @param			p			Index of lower corner node
@@ -595,28 +596,6 @@ void puGet3DRotationParameters(dictionary *ini, double *T, double *S, double dtF
     free(charge);
 }
 
-// void puGet3DRotationParameters(dictionary *ini, double *T, double *S, double dtFactor){
-//
-// 	int nDims = iniGetInt(ini,"grid:nDims");
-// 	int nSpecies = iniGetInt(ini,"population:nSpecies");
-// 	double *BExt = iniGetDoubleArr(ini,"fields:BExt",nDims);
-// 	double *charge = iniGetDoubleArr(ini,"population:charge",nSpecies);
-// 	double *mass = iniGetDoubleArr(ini,"population:mass",nSpecies);
-//
-// 	for(int s=0;s<nSpecies;s++){
-// 		double factor = 0.5*charge[s]/mass[s];
-// 		double denom = 1;
-// 		for(int p=0;p<3;p++){
-// 			T[3*s+p] = factor*BExt[p];
-// 			denom += pow(T[3*s+p],2);
-// 		}
-// 		double mul = 2.0/denom;
-// 		for(int p=0;p<3;p++){
-// 			S[3*s+p] = mul*T[3*s+p];
-// 		}
-// 	}
-// }
-
 funPtr puDistr3D1_set(dictionary *ini){
 	puSanity(ini,"puDistr3D1",3,1);
 	return puDistr3D1;
@@ -664,13 +643,6 @@ void puDistr3D1(const Population *pop, Grid *rho){
 			long int pkl 	= pl + sizeProd[2];
 			long int pjkl 	= pkl + 1; //sizeProd[1];
 
-
-			// if(p>=sizeProd[4]){
-			// 	msg(ERROR,"Particle %i at (%f,%f,%f) out-of-bounds, tried to access node %li",i,pos[0],pos[1],pos[2],pjkl);
-		 	// }
-			//12294
-			//printf("p = %li\n",sizeProd[4]);
-			//printf("val[p] = %f\n",val[p]);
 			val[p] 		+= xcomp*ycomp*zcomp;
 			val[pj]		+= x    *ycomp*zcomp;
 			val[pk]		+= xcomp*y    *zcomp;
@@ -679,12 +651,9 @@ void puDistr3D1(const Population *pop, Grid *rho){
 			val[pjl]	+= x    *ycomp*z    ;
 			val[pkl]	+= xcomp*y    *z    ;
 			val[pjkl]	+= x    *y    *z    ;
-
 		}
 
 		gMul(rho, pop->charge[s]);
-		//adPrint(rho->val,rho->sizeProd[4]);
-		//exit(0);
 	}
 
 }
@@ -722,19 +691,13 @@ void puDistr3D1split(const Population *pop, Grid *rho,Grid *rho_e,Grid *rho_i){
 			int j = (int) (pos[0]);
 			int k = (int) (pos[1]);
 			int l = (int) (pos[2]);
-			//if(j==0 || k==0 || l==0){
-				//msg(STATUS, "j = %i, k = %i, l = %i", j,k,l);
-			//msg(STATUS, "pos0 = %f, pos1 = %f, pos2 = %f", pos[0],pos[1],pos[2]);
-			//}
 			// Decimal (cell-referenced) parts of position and their complement
 			double x = pos[0]-j;
 			double y = pos[1]-k;
 			double z = pos[2]-l;
-			//msg(STATUS, "x = %f, y = %f, z = %f", x,y,z);
 			double xcomp = 1-x;
 			double ycomp = 1-y;
 			double zcomp = 1-z;
-			//msg(STATUS, "xcomp = %f, ycomp = %f, zcomp = %f", xcomp,ycomp,zcomp);
 			// Index of neighbouring nodes
 			long int p 		= j + k*sizeProd[2] + l*sizeProd[3];
 			long int pj 	= p + 1; //sizeProd[1];
@@ -744,10 +707,6 @@ void puDistr3D1split(const Population *pop, Grid *rho,Grid *rho_e,Grid *rho_i){
 			long int pjl 	= pl + 1; //sizeProd[1];
 			long int pkl 	= pl + sizeProd[2];
 			long int pjkl 	= pkl + 1; //sizeProd[1];
-			//msg(STATUS, "p= %li, pk = %li",p,pk);
-			// if(pjkl>=sizeProd[4])
-			// 	msg(STATUS,"Particle %i at (%f,%f,%f) out-of-bounds, tried to access node %li",i,pos[0],pos[1],pos[2],pjkl);
-
 			val[p] 		+= xcomp*ycomp*zcomp;
 			val[pj]		+= x    *ycomp*zcomp;
 			val[pk]		+= xcomp*y    *zcomp;
@@ -756,7 +715,6 @@ void puDistr3D1split(const Population *pop, Grid *rho,Grid *rho_e,Grid *rho_i){
 			val[pjl]	+= x    *ycomp*z    ;
 			val[pkl]	+= xcomp*y    *z    ;
 			val[pjkl]	+= x    *y    *z    ;
-			//msg(STATUS,"val[p] = %f val[p+1] = %f ",val[p], val[p+1] );
 			if(s==1){ // stupid way to split but but, it isnt only only
 				val_i[p] 		+= xcomp*ycomp*zcomp;
 				val_i[pj]		+= x    *ycomp*zcomp;
@@ -784,28 +742,7 @@ void puDistr3D1split(const Population *pop, Grid *rho,Grid *rho_e,Grid *rho_i){
 		gMul(rho, pop->charge[s]);
 		gMul(rho_e, pop->charge[s]);
 		gMul(rho_i, pop->charge[s]);
-		//Assuming two species with 0'th as electrons
-		//an 1'st as Ions
-		//msg(STATUS,"in dist, s = %i",s);
-		if(s==0){
-
-			//val_i = *val;
-			//rho_i->val = rho->val;
-			//gMul(rho_e,pop->renormRho[s]);
-			//msg(STATUS,"if s= 0");
-		}
-		if(s==1){
-			//msg(STATUS,"if s= 1");
-			//gMul(rho_i,pop->renormRho[s]);
-		}
-		//int rank = rho_i->rank;
-		//long int nElements = rho_i->sizeProd[rank];
-		//for(long int p=0;p<nElements;p++){
-		//	msg(STATUS,"val[p]_e = %f n = %i",val_e[p],nElements);
-		//}
-
 	}
-
 }
 
 
@@ -835,9 +772,7 @@ static void puDistrND1InnerSplit(int s,double *val,double *val_e,double *val_i,
 		puDistrND1InnerSplit(s,val,val_e,val_i,p     ,mul-1,lastMul,decimal-1,complement-1,*complement*factor);
 		puDistrND1InnerSplit(s,val,val_e,val_i,p+*mul,mul-1,lastMul,decimal-1,complement-1,*decimal   *factor);
 	}
-
 }
-
 
 void puDistrND1Split(const Population *pop, Grid *rho,Grid *rho_e,Grid *rho_i){
 	// assumes two species s = e, i
@@ -897,9 +832,6 @@ void puDistrND1Split(const Population *pop, Grid *rho,Grid *rho_e,Grid *rho_i){
 	free(decimal);
 	free(complement);
 }
-
-
-
 
 funPtr puDistrND1_set(dictionary *ini){
 	puSanity(ini,"puDistrND1",0,1);
@@ -1175,21 +1107,14 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 	bndType *bnd = pop->bnd;
 	//int rank = mpiInfo->mpiRank;
 
-	//printf("mpirank = %i, bnd[1] = %d,bnd[2] = %d,bnd[3] = %d, bnd[5] = %d,bnd[6] = %d,bnd[7] = %d \n",rank,bnd[1],bnd[2],bnd[3],bnd[5],bnd[6],bnd[7]);
 	double dummyPos[3];
 
 	int *offset = mpiInfo->offset;
 	//int nDims = pop->nDims;
 
-
 	nSubdomains[0] = nSubdomainsProd[1];
 	nSubdomains[1] = nSubdomainsProd[2]/nSubdomainsProd[1];
 	nSubdomains[2] = (nSubdomainsProd[3]/nSubdomainsProd[2]);
-
-	//msg(STATUS, "sssss %i, %i, %i", nSubdomains[0], nSubdomains[1], nSubdomains[2]);
-	//exit(0);
-
-	//msg(STATUS,"neighbours = %i",mpiInfo->nNeighbors);
 
 	// By using the dummy to hold data we won't lose track of the beginning of
 	// the arrays when incrementing the pointer
@@ -1207,8 +1132,6 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 	double uy = thresholds[4];
 	double uz = thresholds[5];
 
-	//adPrint(thresholds,6);
-
 	for(int s=0;s<nSpecies;s++){
 
 		long int pStart = pop->iStart[s]*3;
@@ -1220,11 +1143,8 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 
 			for(int d=0;d<3;d++) {
 				//Why is offset size -1 ? ... -1 ?
-				//printf("%i \n",offset[d]);
 				dummyPos[d] = pop->pos[p+d] + offset[d];
-				//if(pop->pos[p+d]<1) printf("\n \n pop->pos[p+d] = %f \n \n ",pop->pos[p+d]);
 			}
-
 
 			// not offset but GLOBAL Size!
 			//MpiInfo->subdomain;				///< MPI node (nDims elements)
@@ -1235,26 +1155,6 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 				|| ( dummyPos[1] > trueSize[1]*(nSubdomains[1]) && bnd[6]!=PERIODIC)
 				|| (  dummyPos[2] > trueSize[2]*(nSubdomains[2]) && bnd[7]!=PERIODIC)   ){
 
-					// if (s==0){
-					// 	printf("removed upper \n");
-					// 	printf("trueSize[1]*(nSubdomains[0]) = %i \n",trueSize[0]*(nSubdomains[0]));
-					// 	printf("bnd[5] = %d,bnd[6] = %d,bnd[7] = %d \n",bnd[5],bnd[6],bnd[7]);
-					// 	printf("global: %f, %f, %f \n", dummyPos[0], dummyPos[1], dummyPos[2]);
-					// 	printf("local: %f, %f, %f \n", pop->pos[p+0], pop->pos[p+1],  pop->pos[p+2]);
-					// 	printf("ofsett: %i, %i, %i \n \n", offset[0], offset[1], offset[2]);
-					// }
-				//printf("too large \n");
-				//msg(STATUS,"%i, %i, %i \n",trueSize[0],trueSize[1],trueSize[2]);
-				//printf("global: %f, %f, %f \n",dummyPos[0], dummyPos[1], dummyPos[2]);
-				//printf("Local: %f, %f, %f \n",pop->pos[p+0], pop->pos[p+1], pop->pos[p+2]);
-				//printf("Boundary %f, %f, %f \n \n",ux+trueSize[0]*(nSubdomains[0]-1),uy+trueSize[1]*(nSubdomains[1]-1),uz+trueSize[2]*(nSubdomains[2]-1) );
-				//msg(STATUS, " removing ");
-				// Remove particle out of bounds particle
-
-				//msg(STATUS,"dummyPos[0] = %f, thresholds[0]+pos = %f",dummyPos[0],thresholds[0]+pop->pos[p*3*+d]);
-				//msg(STATUS,"dummyPos[1] = %f, thresholds[1]+pos = %f",dummyPos[1],thresholds[1]+pop->pos[p*3*+d]);
-				//msg(STATUS,"dummyPos[2] = %f, thresholds[2]+pos = %f",dummyPos[2],thresholds[2]+pop->pos[p*3*+d]);
-				//printf(" \n");
 				removedupp += 1; //debug
 				pos[p]   = pos[pStop-3];
 				pos[p+1] = pos[pStop-2];
@@ -1271,20 +1171,6 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 			else if ( (dummyPos[0] < -1. && bnd[1]!=PERIODIC)
 				|| ( dummyPos[1] < -1. && bnd[2]!=PERIODIC)
 				|| ( dummyPos[2] < -1. && bnd[3]!=PERIODIC) ){
-				//printf("%f\n",dummyPos[0]);
-				//msg(STATUS, " removing ");
-				// Remove particle out of bounds particle
-
-				// if (s==0){
-				// 	printf("removed lower \n");
-				// 	printf("bnd[1] = %d,bnd[2] = %d,bnd[3] = %d \n",bnd[1],bnd[2],bnd[3]);
-				// 	printf("global: %f, %f, %f \n", dummyPos[0], dummyPos[1], dummyPos[2]);
-				// 	printf("local: %f, %f, %f \n", pop->pos[p+0], pop->pos[p+1],  pop->pos[p+2]);
-				// 	printf("ofsett: %i, %i, %i \n \n", offset[0], offset[1], offset[2]);
-				// }
-				//printf("too small \n");
-				//printf("%f, %f, %f \n",dummyPos[0], dummyPos[1], dummyPos[2]);
-				//printf("%f, %f, %f \n \n",pop->pos[p+0], pop->pos[p+1], pop->pos[p+2]);
 
 				removedlow += 1; //debug
 				pos[p]   = pos[pStop-3];
@@ -1314,23 +1200,7 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 			int nz = - (z<lz) + (z>=uz);
 			int ne = neighborhoodCenter + nx + 3*ny + 9*nz;
 
-			// if (s==1){
-			// 	if (x<lx) msg(STATUS,"exhanged particle backward, s = %i \n",s);
-			// 	if (y<ly) msg(STATUS,"exhanged particle backward, s = %i \n",s);
-			// 	if (z<lz) msg(STATUS,"exhanged particle backward, s = %i \n",s);
-			// }
-			// if(p==371*3)
-			// 	msg(STATUS,"x1: %f",x);
-
 			if(ne!=neighborhoodCenter){
-				//msg(STATUS, "exchanged");
-				//msg(STATUS,"ne = %i",ne);
-				// if (s==1){
-				// 	printf("exhcanged \n" );
-				// 	printf("global: %f, %f, %f \n", dummyPos[0], dummyPos[1], dummyPos[2]);
-				// 	printf("local: %f, %f, %f \n", pop->pos[p+0], pop->pos[p+1],  pop->pos[p+2]);
-				// 	printf("offset: %i, %i, %i \n \n", offset[0]+1, offset[1]+1, offset[2]+1);
-				// }
 
 				exhanged += 1;
 				*(emigrants[ne]++) = x;
@@ -1348,9 +1218,6 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 				vel[p+1] = vel[pStop-2];
 				vel[p+2] = vel[pStop-1];
 
-				// if(p==371*3)
-				// 	msg(STATUS,"x2: %f",pos[p]);
-
 				pStop -= 3;
 				p -= 3;
 				pop->iStop[s]--;
@@ -1360,15 +1227,10 @@ void puExtractEmigrants3DOpen(Population *pop, MpiInfo *mpiInfo){
 				}
 
 			}
-		}//printf("removedupp = %li,removedlow = %li, exhanged = %li s = %i, for rank = %i \n", removedupp,removedlow,exhanged,s,mpiInfo->mpiRank);
-		//msg(STATUS,"pRange: %li, iStop: %li",pStart-pStop,pop->iStop[s]);
+		}
 	}
 	free(nSubdomains);
 }
-
-
-
-
 
 // Works
 // TODO: Add fault-handling in case of too small "emigrants" buffer
@@ -1387,8 +1249,6 @@ void puExtractEmigrants3D(Population *pop, MpiInfo *mpiInfo){
 	long int *nEmigrants = mpiInfo->nEmigrants;
 	int nNeighbors = mpiInfo->nNeighbors;
 
-	//msg(STATUS,"neighbours = %i",mpiInfo->nNeighbors);
-
 	// By using the dummy to hold data we won't lose track of the beginning of
 	// the arrays when incrementing the pointer
 	double **emigrants = mpiInfo->emigrantsDummy;
@@ -1403,8 +1263,6 @@ void puExtractEmigrants3D(Population *pop, MpiInfo *mpiInfo){
 	double ux = thresholds[3];
 	double uy = thresholds[4];
 	double uz = thresholds[5];
-
-	//adPrint(thresholds,6);
 
 	for(int s=0;s<nSpecies;s++){
 
@@ -1422,11 +1280,7 @@ void puExtractEmigrants3D(Population *pop, MpiInfo *mpiInfo){
 			int ne = neighborhoodCenter + nx + 3*ny + 9*nz;
 
 
-			// if(p==371*3)
-			// 	msg(STATUS,"x1: %f",x);
-
 			if(ne!=neighborhoodCenter){
-				//msg(STATUS,"ne = %i",ne);
 				*(emigrants[ne]++) = x;
 				*(emigrants[ne]++) = y;
 				*(emigrants[ne]++) = z;
@@ -1442,9 +1296,6 @@ void puExtractEmigrants3D(Population *pop, MpiInfo *mpiInfo){
 				vel[p+1] = vel[pStop-2];
 				vel[p+2] = vel[pStop-1];
 
-				// if(p==371*3)
-				// 	msg(STATUS,"x2: %f",pos[p]);
-
 				pStop -= 3;
 				p -= 3;
 				pop->iStop[s]--;
@@ -1452,7 +1303,6 @@ void puExtractEmigrants3D(Population *pop, MpiInfo *mpiInfo){
 
 			}
 		}
-		// msg(STATUS,"pRange: %li-%li, iStop: %li",pStart,pStop,pop->iStop[s]);
 	}
 }
 
@@ -1565,8 +1415,6 @@ static inline void shiftImmigrants(MpiInfo *mpiInfo, Grid *grid, int ne){
 			immigrants[d+2*nDims*i] += shift;
 
 			// double pos = immigrants[d+2*nDims*i];
-			// if(pos>grid->trueSize[d+1])
-			// 	msg(ERROR,"particle %i skipped two domains");
 
 		}
 
@@ -1624,8 +1472,6 @@ static inline void exchangeMigrants(Population *pop, MpiInfo *mpiInfo, Grid *gri
 	// be used. However, in order to receive and process whichever comes first
 	// MPI_ANY_SOURCE is used.
 
-
-
 	for(int a=0;a<nNeighbors-1;a++){
 
 		MPI_Status status;
@@ -1635,17 +1481,13 @@ static inline void exchangeMigrants(Population *pop, MpiInfo *mpiInfo, Grid *gri
 		MPI_Recv(immigrants,2*nDims*nImmigrantsAlloc,MPI_DOUBLE,MPI_ANY_SOURCE,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
 		int ne = status.MPI_TAG;	// Which neighbor it is from equals the tag
 
-		// adPrint(mpiInfo->immigrants,6);
 		shiftImmigrants(mpiInfo,grid,ne);
-		// adPrint(mpiInfo->immigrants,6);
 
 		importParticles(pop,immigrants,&nImmigrants[ne*nSpecies],nSpecies,mpiInfo);
 
 	}
 
 	MPI_Waitall(nNeighbors,send,MPI_STATUS_IGNORE);
-
-
 }
 
 // Works
@@ -1656,12 +1498,6 @@ void puMigrate(Population *pop, MpiInfo *mpiInfo, Grid *grid){
 
 }
 
-// void puReflect(){
-//
-//
-//
-// }
-
 /******************************************************************************
  * DEFINING LOCAL FUNCTIONS
  *****************************************************************************/
@@ -1669,7 +1505,6 @@ void puMigrate(Population *pop, MpiInfo *mpiInfo, Grid *grid){
 void puAssertEmigrantsAlloc(long int count,int ne, MpiInfo *mpiInfo){
 	long int *nEmigrantsAlloc = mpiInfo->nEmigrantsAlloc;
 	int err=0;
-	//printf("On proc = %i, count = %li,  nEmigrantsAlloc[ne] = %li\n",mpiInfo->mpiRank,count,nEmigrantsAlloc[ne] );
 	if (count > nEmigrantsAlloc[ne]){//2*mpiInfo->nDims*
 		msg(ALL,"On proc = %i, count = %li,  nEmigrantsAlloc[ne] = %li\n",mpiInfo->mpiRank,count,nEmigrantsAlloc[ne] );
 		err=1;
@@ -1684,7 +1519,6 @@ void puAssertEmigrantsAlloc(long int count,int ne, MpiInfo *mpiInfo){
 void puAssertImmigrantsAlloc(long int count, MpiInfo *mpiInfo){
 	long int nImmigrantsAlloc = mpiInfo->nImmigrantsAlloc;
 	int err=0;
-	//printf("On proc = %i, count = %li,  nImmigrantsAlloc  = %li\n",mpiInfo->mpiRank,count,nImmigrantsAlloc );
 	if (count > nImmigrantsAlloc){
 		msg(ALL,"On proc = %i, count = %li,  nImigrantsAlloc = %li\n",mpiInfo->mpiRank,count,nImmigrantsAlloc );
 		err=1;
@@ -1884,7 +1718,6 @@ int puRankToNeighbor(MpiInfo *mpiInfo, int rank){
 }
 
 static inline void addCross(const double *a, const double *b, double *res){
-	//msg(STATUS, "addCross b (S or T) is %f, %f, %f",b[0],b[1],b[2]);
 	res[0] +=  (a[1]*b[2]-a[2]*b[1]);
 	res[1] += -(a[0]*b[2]-a[2]*b[0]);
 	res[2] +=  (a[0]*b[1]-a[1]*b[0]);
@@ -1899,16 +1732,12 @@ void puAddEext(dictionary *ini, Population *pop, Grid *E){
 	long int *sizeProd = E->sizeProd;
 	double *val = E->val;
 	double *Eext = iniGetDoubleArr(ini,"fields:EExt",nDims);
-	//msg(STATUS,"eext = (%f,%f,%f)",Eext[0],Eext[1],Eext[2]);
 
 	for(long int p=0;p<sizeProd[rank];p+=nDims){
 		for(int d=0;d<nDims;d++){
-			//msg(STATUS, "E1 = %f" , val[p+d] );
 			val[p+d] += Eext[d];
 
 			E->val[p+d] = val[p+d];
-			//msg(STATUS, "E2 = %f" , E->val[p+d] );
-			//msg(STATUS,"eext = (%f,%f,%f),stepsize = %.64f",Eext[0],Eext[1],Eext[2],timeStep);
 		}
 	}
 	free(Eext);

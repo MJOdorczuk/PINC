@@ -222,8 +222,6 @@ void oComputeCapacitanceMatrix(PincObject *obj, dictionary *ini, const MpiInfo *
 	gZero(phiCap);
 	gAdd(phiCap, realTol); // for large grids if the whole phi grid is zero the
 	// MG solver converges in one iteration. This fixes this issue.
-	double rhoSumTest = 0.0; // Delete this, debug
-	double phiSumTest = 0.0;
 	//gSetBndSlices(ini, phiCap, mpiInfo);
 
     // Find the number of surface nodes for each object.
@@ -267,47 +265,25 @@ void oComputeCapacitanceMatrix(PincObject *obj, dictionary *ini, const MpiInfo *
 
             // Set the surface node to 1 charge.
             if (rank==j) {
-		if(lookupSurf[inode]>rhoCap->sizeProd[4]){
-		    msg(ERROR,"Index out of bounds in oComputeCapacitanceMatrix");
-		}
+                if(lookupSurf[inode]>rhoCap->sizeProd[4]){
+                    msg(ERROR,"Index out of bounds in oComputeCapacitanceMatrix");
+		        }
                 rhoCap->val[lookupSurf[inode]]=1;//rhoCap->val[lookupSurf[lookupSurfOff[a] + inode]] = 1;
                 printf("adding 1 rho to node %li \n",lookupSurf[inode]);
             }
 
-	    //rhoSumTest = gSumTruegrid(rhoCap);
-	    //MPI_Allreduce(MPI_IN_PLACE, &rhoSumTest, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	    //msg(STATUS,"total charge = %f",(rhoSumTest));
-	    //phiSumTest=0;
-	    //phiSumTest = gSumTruegrid(phiCap);
-	    //MPI_Allreduce(MPI_IN_PLACE, &phiSumTest, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	    //msg(STATUS,"total pot = %f",(phiSumTest));
-
             // Solve for the potential.
             solve(solver, rhoCap, phiCap, mpiInfo);
 
-            //msg(STATUS,"phi size = %i",phiCap->sizeProd[4]);
-        		//for (long int q = 0; q<phiCap->rank;q++){
-        		//	adPrint(phiCap->val,phiCap->sizeProd[4] );
-        		//	}
             // Set the surface node back to zero.
             if (rank==j) {
                 rhoCap->val[lookupSurf[inode]] = 0;//rhoCap->val[lookupSurf[inode]] = 0;
-		printf("removing 1 rho from node %li \n",lookupSurf[inode]);
+		        printf("removing 1 rho from node %li \n",lookupSurf[inode]);
             }
-
-	    //rhoSumTest = gSumTruegrid(rhoCap);
-	    //MPI_Allreduce(MPI_IN_PLACE, &rhoSumTest, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	    //msg(STATUS,"total charge = %f",(rhoSumTest));
-	    //phiSumTest=0;
-	    //phiSumTest = gSumTruegrid(phiCap);
-	    //MPI_Allreduce(MPI_IN_PLACE, &phiSumTest, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	    //msg(STATUS,"total pot = %f \n",(phiSumTest));
-
 
             // Fill column i of the capacitance matrix.
             for (int k=beginIndex; k<endIndex; k++) {
                 capMatrix[totSNGlob*k + i] = phiCap->val[lookupSurf[lookupSurfOff[a] + k-beginIndex]];
-                //printf("indexing to %i in cap matrix, max: %li \n",(lookupSurf[lookupSurfOff[a] + k-beginIndex]),(phiCap->sizeProd[4]));
             }
 
             // Increase the counters. If you looped over all nodes on this core, increase the rank and reset inode.
@@ -316,7 +292,6 @@ void oComputeCapacitanceMatrix(PincObject *obj, dictionary *ini, const MpiInfo *
                 j++;
                 inode=0;
             }
-
         }
 
         // Make sure every codes has the complete matrix (needed for BLAS).
@@ -324,21 +299,15 @@ void oComputeCapacitanceMatrix(PincObject *obj, dictionary *ini, const MpiInfo *
         MPI_Allreduce(MPI_IN_PLACE, capMatrix, mpiSendNr, \
                       MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-        //printf("(totSNGlob*totSNGlob) = %li \n", mpiSendNr);
-        //adPrint(capMatrix, (totSNGlob*totSNGlob));
         // Compute the inverse of the capacitance matrix.
         // Actually, the inverse is the capacitance matrix. Probably have to rethink the variable names.
         gsl_matrix_view A = gsl_matrix_view_array(capMatrix, totSNGlob, totSNGlob);
         gsl_matrix_view invA = gsl_matrix_view_array(invCapMatrix, totSNGlob, totSNGlob);
 
-        //debug 290619
-        //print_gsl_mat(A);
-
         int s;
         gsl_permutation *p = gsl_permutation_alloc(totSNGlob);
         gsl_linalg_LU_decomp(&A.matrix, p, &s);
         gsl_linalg_LU_invert(&A.matrix, p, &invA.matrix);
-        //print_gsl_mat(invA);
 
         // Add the invCapMatrix for object a to the big array.
         for (long int l=0; l<totSNGlob*totSNGlob; l++) {
@@ -350,28 +319,14 @@ void oComputeCapacitanceMatrix(PincObject *obj, dictionary *ini, const MpiInfo *
         // We need the inverse later on.
         capMatrixSum[a] = 1/capMatrixSum[a];
 
-
         free(capMatrix),
         free(invCapMatrix);
         gsl_permutation_free(p);
     }
 
-    //long int *capMatrixAllOffsets = nodCorGlob;
-
-    //adPrint(capMatrixAll,capMatrixAllSize*capMatrixAllSize);
-    // Add to object
-    //obj->capMatrixAll = capMatrixAll;
-    //obj->capMatrixAllOffsets = nodCorGlob;
-    //obj->capMatrixSum = capMatrixSum;
-
     gFree(rhoCap);
     gFree(phiCap);
     solverFree(solver);
-
-    //free(nodCorLoc);
-
-    //free(nodCorGlob);
-
 }
 
 // Construct and solve equation 5 in Miyake_Usui_PoP_2009
@@ -392,10 +347,6 @@ void oApplyCapacitanceMatrix(Grid *rho, const Grid *phi, const PincObject *obj, 
     int biasOn = obj->biasOn;
     //double *objectCurrent = obj->objectCurrent;
     //double totObjCharge = 0;
-    int nSpecies = 2;//pop->nSpecies;
-
-
-
     // Loop over the objects
     for (long int a=0; a<obj->nObjects; a++) {
 
@@ -423,17 +374,6 @@ void oApplyCapacitanceMatrix(Grid *rho, const Grid *phi, const PincObject *obj, 
             }
         }
 
-		// Debug test
-		// capMatrixSum[a] = 0;
-		// for (long int i=0; i<totSNGlob; i++) {
-        //     // Make sure that each core loops only over the matrix elements/parts of the grid it has
-        //     for (long int j=beginIndex; j<endIndex; j++) {
-        //         capMatrixSum[a] += capMatrixAll[a*totSNGlob*totSNGlob+totSNGlob*j+i];
-        //     }
-        // }
-		// //MPI_Allgather(&capMatrixSum[a], 1, MPI_DOUBLE, &capMatrixSum[a], 1, MPI_DOUBLE, MPI_COMM_WORLD);
-		// MPI_Allreduce(MPI_IN_PLACE, &capMatrixSum[a], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
         // This is phi_c for each object.
         if (biasOn==1){
           //printf("AKSJDHSKAJDHAK");
@@ -443,14 +383,10 @@ void oApplyCapacitanceMatrix(Grid *rho, const Grid *phi, const PincObject *obj, 
           MPI_Allreduce(MPI_IN_PLACE, &capMatrixPhiSum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         }
 
-		//printf("capMatrixSum[a] = %f\n",capMatrixSum[a] );
-		//printf("capMatrixPhiSum = %f\n",capMatrixPhiSum );
-        //msg(STATUS,"Potential-check for object %ld : %f",a,(units->potential*capMatrixPhiSum));
         //capMatrixPhiSum=0.03;
 
         for (long int j=beginIndex; j<endIndex; j++) {
             deltaPhi[j] = capMatrixPhiSum - phi->val[lookupSurf[lookupSurfOff[a] + j-beginIndex]];
-            //printf("adding correction to node %f \n",deltaPhi[j] );
         }
 
         MPI_Allreduce(MPI_IN_PLACE, deltaPhi, totSNGlob, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -459,7 +395,6 @@ void oApplyCapacitanceMatrix(Grid *rho, const Grid *phi, const PincObject *obj, 
         for (long int i=0; i<totSNGlob; i++) {
             for (long int j=beginIndex; j<endIndex; j++) {
                 rhoCorr[i] += capMatrixAll[a*totSNGlob*totSNGlob+totSNGlob*j+i]*deltaPhi[j];
-
             }
         }
 
@@ -469,26 +404,13 @@ void oApplyCapacitanceMatrix(Grid *rho, const Grid *phi, const PincObject *obj, 
         for (long int j=beginIndex; j<endIndex; j++) {
             rho->val[lookupSurf[lookupSurfOff[a] + j-beginIndex]] += rhoCorr[j];
             //totObjCharge += rho->val[lookupSurf[lookupSurfOff[a] + j-beginIndex]];
-
         }
-
-        //MPI_Allreduce(MPI_IN_PLACE, &totObjCharge, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-        //for (long int s=0; s<nSpecies; s++) {
-	    //objectCurrent[a*nSpecies + s] += totObjCharge ;
-        //}
-
-        //free(deltaPhi);
-        //free(rhoCorr);
     }
-
-
 }
 
 //Find all the object nodes which are part of the object surface.
 static void oFindObjectSurfaceNodes(PincObject *obj) {
 
-    //printf("in oFindObjSurf \n");
     long int *sizeProd = obj->domain->sizeProd;
     double *val = obj->domain->val;
 
@@ -496,7 +418,6 @@ static void oFindObjectSurfaceNodes(PincObject *obj) {
     long int *lookupSurfaceOffset = malloc((obj->nObjects+1)*sizeof(*lookupSurfaceOffset));
     alSetAll(lookupSurfaceOffset,obj->nObjects+1,0);
 
-    //printf("finding offsets \n");
     // Find the 8 neighbour cells of each non-ghost node.
     long int *myNB = malloc(10*sizeof(*myNB));
     // Find the ofsetts first.
@@ -506,13 +427,12 @@ static void oFindObjectSurfaceNodes(PincObject *obj) {
                 myNB[0] = b;    // me on node i,j,k
                 myNB[1] = myNB[0];                  // cell i,j,k
                 myNB[2] = myNB[0] - sizeProd[3];    // cell i,j,k-1
-                myNB[3] = myNB[0] - sizeProd[1];                    // cell i-1,j,k
-                myNB[4] = myNB[0] - sizeProd[1] - sizeProd[3];      // cell i-1,j,k-1
-                myNB[5] = myNB[0] - sizeProd[2];                    // cell i,j-1,k
-                myNB[6] = myNB[0] - sizeProd[2] - sizeProd[3];      // cell i,j-1,k-1
-                myNB[7] = myNB[0] - sizeProd[2] - sizeProd[1];      // cell i-1,j-1,k
-                myNB[8] = myNB[0] - sizeProd[2] - sizeProd[1] - sizeProd[3];   // cell i-1,j-1,k-1
-                //myNB[9] = myNB[0] - sizeProd[1] - sizeProd[2];      // cell i-1,j-1,k
+                myNB[3] = myNB[0] - sizeProd[1];    // cell i-1,j,k
+                myNB[4] = myNB[0] - sizeProd[1] - sizeProd[3]; // cell i-1,j,k-1
+                myNB[5] = myNB[0] - sizeProd[2];               // cell i,j-1,k
+                myNB[6] = myNB[0] - sizeProd[2] - sizeProd[3]; // cell i,j-1,k-1
+                myNB[7] = myNB[0] - sizeProd[2] - sizeProd[1]; // cell i-1,j-1,k
+                myNB[8] = myNB[0] - sizeProd[2] - sizeProd[1] - sizeProd[3];  // cell i-1,j-1,k-1
 
                 int d=0;
                 if (val[myNB[1]]>(a+0.5) && val[myNB[1]]<(a+1.5)) d++;
@@ -525,25 +445,13 @@ static void oFindObjectSurfaceNodes(PincObject *obj) {
                 if (val[myNB[8]]>(a+0.5) && val[myNB[8]]<(a+1.5)) d++;
                 //if (val[myNB[9]]>(a+0.5) && val[myNB[9]]<(a+1.5)) d++;
 
-                // double x = pos[p];
-          			// double y = pos[p+1];
-          			// double z = pos[p+2];
-          			// int nx = - (x<lx) + (x>=ux);
-          			// int ny = - (y<ly) + (y>=uy);
-          			// int nz = - (z<lz) + (z>=uz);
-          			// int ne = neighborhoodCenter + nx + 3*ny + 9*nz;
-
                 // Check if on surface.
                 if (d<7.5 && d>0) { //val[myNB[0]]>(a+0.5) &&
                     lookupSurfaceOffset[a+1]++;
-
                 }
             }
         }
-        //MPI_Allreduce(MPI_IN_PLACE, &lookupSurfaceOffset[a+1], 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-        //aiPrint(&lookupSurfaceOffset[a+1],1);
     }
-    //printf("offsets done \n");
     alCumSum(lookupSurfaceOffset+1,lookupSurfaceOffset,obj->nObjects);
 
     // Initialise and compute the lookup table.
@@ -562,13 +470,12 @@ static void oFindObjectSurfaceNodes(PincObject *obj) {
                 myNB[0] = b;    // me on node i,j,k
                 myNB[1] = myNB[0];                  // cell i,j,k
                 myNB[2] = myNB[0] - sizeProd[3];    // cell i,j,k-1
-                myNB[3] = myNB[0] - sizeProd[1];                    // cell i-1,j,k
-                myNB[4] = myNB[0] - sizeProd[1] - sizeProd[3];      // cell i-1,j,k-1
-                myNB[5] = myNB[0] - sizeProd[2];                    // cell i,j-1,k
-                myNB[6] = myNB[0] - sizeProd[2] - sizeProd[3];      // cell i,j-1,k-1
-                myNB[7] = myNB[0] - sizeProd[2] - sizeProd[1];                  // cell i-1,j-1,k;
-                myNB[8] = myNB[0] - sizeProd[2] - sizeProd[1] - sizeProd[3];    // cell i-1,j-1,k-1
-                //myNB[9] = myNB[0] - sizeProd[1] - sizeProd[2];      // cell i-1,j-1,k
+                myNB[3] = myNB[0] - sizeProd[1];    // cell i-1,j,k
+                myNB[4] = myNB[0] - sizeProd[1] - sizeProd[3]; // cell i-1,j,k-1
+                myNB[5] = myNB[0] - sizeProd[2];  // cell i,j-1,k
+                myNB[6] = myNB[0] - sizeProd[2] - sizeProd[3]; // cell i,j-1,k-1
+                myNB[7] = myNB[0] - sizeProd[2] - sizeProd[1]; // cell i-1,j-1,k
+                myNB[8] = myNB[0] - sizeProd[2] - sizeProd[1] - sizeProd[3];  // cell i-1,j-1,k-1
 
                 int d=0;
                 if (val[myNB[1]]>(a+0.5) && val[myNB[1]]<(a+1.5)) d++;
@@ -585,128 +492,20 @@ static void oFindObjectSurfaceNodes(PincObject *obj) {
                 if (d<7.5 && d>0) { //val[myNB[0]]>(a+0.5) &&
                     lookupSurface[index[a]] = myNB[0];
                     index[a]++;
-                    //printf("indexing %li, MAX: %li \n",index[a],lookupSurfaceOffset[obj->nObjects]+1);
                 }
-
-
             }
         }
     }
-    //printf("lookup surface done \n");
     // Add to object.
-    //alPrint(lookupSurface,(lookupSurfaceOffset[obj->nObjects]+1));
     obj->lookupSurface = lookupSurface;
     obj->lookupSurfaceOffset = lookupSurfaceOffset;
 
     free(myNB);
     free(index);
 }
-// //Find all the object nodes which are part of the object surface.
-// void oFindObjectSurfaceNodes(PincObject *obj, const MpiInfo *mpiInfo) {
-//
-//     long int *sizeProd = obj->domain->sizeProd;
-//     double *val = obj->domain->val;
-//
-//     // Initialise the array storing the offsets for the surface nodes in the lookup table.
-//     long int *lookupSurfaceOffset = malloc((obj->nObjects+1)*sizeof(*lookupSurfaceOffset));
-//     alSetAll(lookupSurfaceOffset,obj->nObjects+1,0);
-//
-//     // Find the 8 neighbour cells of each non-ghost node.
-//     long int *myNB = malloc(9*sizeof(*myNB));
-//     // Find the ofsetts first.
-//     for (long int a=0; a<obj->nObjects; a++) {
-//         for (long int b=0; b<sizeProd[obj->domain->rank]; b++) {
-//             if (!oIsGhostNode(obj->domain, b)) {
-//                 myNB[0] = b;    // me on node i,j,k
-//                 myNB[1] = myNB[0];                  // cell i,j,k
-//                 myNB[2] = myNB[0] - sizeProd[3];    // cell i,j,k-1
-//                 myNB[3] = myNB[0] - sizeProd[1];                    // cell i-1,j,k
-//                 myNB[4] = myNB[0] - sizeProd[1] - sizeProd[3];      // cell i-1,j,k-1
-//                 myNB[5] = myNB[0] - sizeProd[2];                    // cell i,j-1,k
-//                 myNB[6] = myNB[0] - sizeProd[2] - sizeProd[3];      // cell i,j-1,k-1
-//                 myNB[7] = myNB[0] - sizeProd[2] - sizeProd[1];      // cell i-1,j-1,k
-//                 myNB[8] = myNB[0] - sizeProd[2] - sizeProd[1] - sizeProd[3];   // cell i-1,j-1,k-1
-//
-//                 int d=0;
-//                 if (val[myNB[1]]>(a+0.5) && val[myNB[1]]<(a+1.5)) d++;
-//                 if (val[myNB[2]]>(a+0.5) && val[myNB[2]]<(a+1.5)) d++;
-//                 if (val[myNB[3]]>(a+0.5) && val[myNB[3]]<(a+1.5)) d++;
-//                 if (val[myNB[4]]>(a+0.5) && val[myNB[4]]<(a+1.5)) d++;
-//                 if (val[myNB[5]]>(a+0.5) && val[myNB[5]]<(a+1.5)) d++;
-//                 if (val[myNB[6]]>(a+0.5) && val[myNB[6]]<(a+1.5)) d++;
-//                 if (val[myNB[7]]>(a+0.5) && val[myNB[7]]<(a+1.5)) d++;
-//                 if (val[myNB[8]]>(a+0.5) && val[myNB[8]]<(a+1.5)) d++;
-//                 printf("d = %i \n",d);
-//                 // Check if on surface.
-//                 if ( val[myNB[0]]>(a+0.5) && d<8.5 && d>0) {
-//                     lookupSurfaceOffset[a+1]++;
-//                     //msg(STATUS,"lookupSurfaceOffset[a+1] = %li",lookupSurfaceOffset[a+1]);
-//                 }
-//             }
-//         }lookupSurfaceOffset[a+1]++;
-//     }
-//     alCumSum(lookupSurfaceOffset+1,lookupSurfaceOffset,obj->nObjects);
-//
-//     //msg(STATUS,"lookupSurfaceOffset[a+1] = %li",lookupSurfaceOffset[0+1]);
-//     // Initialise and compute the lookup table.
-//     long int *lookupSurface = malloc((lookupSurfaceOffset[obj->nObjects]+1)*sizeof(*lookupSurface));
-//     alSetAll(lookupSurface,lookupSurfaceOffset[obj->nObjects]+1,0);
-//
-//     long int *index = malloc((obj->nObjects)*sizeof(*index));
-//     for (long int i=0; i<obj->nObjects; i++) {
-//         index[i]=lookupSurfaceOffset[i];
-//     }
-//
-//     for (long int a=0; a<obj->nObjects; a++) {
-//         for (long int b=0; b<obj->domain->sizeProd[obj->domain->rank]; b++) {
-//             if (!oIsGhostNode(obj->domain, b)) {
-//                 myNB[0] = b;    // me on node i,j,k
-//                 myNB[1] = myNB[0];                  // cell i,j,k
-//                 myNB[2] = myNB[0] - sizeProd[3];    // cell i,j,k-1
-//                 myNB[3] = myNB[0] - sizeProd[1];                    // cell i-1,j,k
-//                 myNB[4] = myNB[0] - sizeProd[1] - sizeProd[3];      // cell i-1,j,k-1
-//                 myNB[5] = myNB[0] - sizeProd[2];                    // cell i,j-1,k
-//                 myNB[6] = myNB[0] - sizeProd[2] - sizeProd[3];      // cell i,j-1,k-1
-//                 myNB[7] = myNB[0] - sizeProd[2] - sizeProd[1];                  // cell i-1,j-1,k;
-//                 myNB[8] = myNB[0] - sizeProd[2] - sizeProd[1] - sizeProd[3];    // cell i-1,j-1,k-1
-//
-//                 //alPrint(myNB,8);
-//                 //adPrint(val,sizeProd[obj->domain->rank]);
-//                 //msg(STATUS,"a = %li, val[myNB[1]] = %f",a,val[myNB[1]]);
-//                 int d=0;
-//                 if (val[myNB[1]]>(a+0.5) && val[myNB[1]]<(a+1.5)) d++;
-//                 if (val[myNB[2]]>(a+0.5) && val[myNB[2]]<(a+1.5)) d++;
-//                 if (val[myNB[3]]>(a+0.5) && val[myNB[3]]<(a+1.5)) d++;
-//                 if (val[myNB[4]]>(a+0.5) && val[myNB[4]]<(a+1.5)) d++;
-//                 if (val[myNB[5]]>(a+0.5) && val[myNB[5]]<(a+1.5)) d++;
-//                 if (val[myNB[6]]>(a+0.5) && val[myNB[6]]<(a+1.5)) d++;
-//                 if (val[myNB[7]]>(a+0.5) && val[myNB[7]]<(a+1.5)) d++;
-//                 if (val[myNB[8]]>(a+0.5) && val[myNB[8]]<(a+1.5)) d++;
-//
-//                 // Check if on surface
-//                 //msg(STATUS,"val[myNB[1]] = %f, myNB[1] = %li, d = %i",val[myNB[1]],myNB[1],d);
-//                 if ( val[myNB[1]]>(a+0.5) && d<8.5 && d>0) {
-//                     lookupSurface[index[a]] = myNB[1];
-//                     index[a]++;
-//                     //msg(STATUS,"index[a] = %li",index[a]);
-//                 }
-//             }
-//         }
-//     }
-//
-//     // Add to object.
-//     //alPrint(lookupSurface,1);
-//     obj->lookupSurface = lookupSurface;
-//     obj->lookupSurfaceOffset = lookupSurfaceOffset;
-//     //msg(STATUS,"EXITING surface lookup");
-//     //free(index);
-//     //free(myNB);
-// }
-
 
 // Collect the charge inside each object.
 void oCollectObjectCharge(Population *pop, Grid *rhoObj, PincObject *obj, const MpiInfo *mpiInfo) {
-
 
     //int rank = mpiInfo->mpiRank;
     int size = mpiInfo->mpiSize;
@@ -732,30 +531,12 @@ void oCollectObjectCharge(Population *pop, Grid *rhoObj, PincObject *obj, const 
     //long int *nodCorLoc = malloc((size+1)*sizeof(*nodCorLoc));
     long int *nodCorGlob = obj->capMatrixAllOffsets;//malloc(obj->nObjects*(size+1)*sizeof(*nodCorGlob));
 
-    // for (long int a=0; a<obj->nObjects; a++) {
-	//
-    //     long int nodesThisCore = lookupSurfOff[a+1] - lookupSurfOff[a];
-	//
-    //     // Let every core know how many surface nodes everybody has.
-    //     MPI_Allgather(&nodesThisCore, 1, MPI_LONG, nodCorLoc, 1, MPI_LONG, MPI_COMM_WORLD);
-	//
-    //     for(long int i=size-1;i>-1;i--) nodCorLoc[i+1]=nodCorLoc[i];
-    //     nodCorLoc[0] = 0;
-    //     alCumSum(nodCorLoc+1,nodCorLoc,size);
-	//
-    //     for (long int b=0; b<size+1; b++) nodCorGlob[a*(size+1)+b] = nodCorLoc[b];
-    // }
-    //printf("obj->nObjects*(size+1) = %li \n",obj->nObjects*(size+1));
-    //alPrint(nodCorGlob,obj->nObjects*(size+1));
-    //alPrint(nodCorLoc,(size+1));
-
     //double invNrSurfNod = 1.0/(obj->lookupSurfaceOffset[obj->nObjects]);
     double *invNrSurfNod = obj->invNrSurfNod;//malloc(obj->nObjects*sizeof(*invNrSurfNod));
 
 	adSetAll(invNrSurfNod,obj->nObjects,0);
     for (long int a=0; a<obj->nObjects; a++) {
         invNrSurfNod[a] = 1.0/(nodCorGlob[(a+1)*(size)]);
-        //printf("invNrSurfNod[a] = %f, nodCorGlob[(a+1)*(size+1)] = %li",1./invNrSurfNod[a],nodCorGlob[(a+1)*(size)]);
     }
 
     //int cutNumber = 0;
@@ -775,83 +556,30 @@ void oCollectObjectCharge(Population *pop, Grid *rhoObj, PincObject *obj, const 
             int l = (int) pos[2];
 
             long int p = j + k*sizeProd[2] + l*sizeProd[3];
-            long int pIndex = i*nDims; //j + k*sizeProd[2] + l*sizeProd[3];
-            //msg(STATUS,"i, pIndex: %li,%i",(i-iStart),(pIndex-iStart*nDims));
-            // Check whether p is one of the object nodes and collect the charge if so.
-            // for (long int a=0; a<obj->nObjects; a++) {
-            //     for (long int b=lookupSurfOff[a]; b<lookupSurfOff[a+1]; b++) {
-            //         if ((obj->lookupSurface[b])==p) {
-            //             chargeCounter[a] += charge[s];
-			// 			//printf("adding charge = %f\n",charge[s] );
-            //             //msg(STATUS,"p, pIndex: %li,%li, %li",p,(pIndex-iStart*nDims),(iStop-iStart));
-            //             //msg(STATUS,"j,k,l: %i,%i, %i",j,k,l);
-            //             //msg(STATUS,"j,k,l: %f,%f,%f",pos[0],pos[1],pos[2]);
-            //             pCut(pop, s, pIndex, pop->pos, pop->vel);
-            //             cutNumber += 1;
-            //             //msg(STATUS,"iStop = %li",iStop);
-            //             iStop--;
-			//
-            //         }
-            //     }
-			//
-            // }
+            long int pIndex = i*nDims;
 			for (long int a=0; a<obj->nObjects; a++) {
                 for (long int b=lookupIntOff[a]; b<lookupIntOff[a+1]; b++) {
                     if ((obj->lookupInterior[b])==p) {
                         chargeCounter[a] += charge[s];
                         objectCurrent[a*nSpecies + s] += charge[s];
-						//printf("adding charge = %f\n",charge[s] );
-                        //msg(STATUS,"p, pIndex: %li,%li, %li",p,(pIndex-iStart*nDims),(iStop-iStart));
-                        //msg(STATUS,"j,k,l: %i,%i, %i",j,k,l);
-                        //msg(STATUS,"j,k,l: %f,%f,%f",pos[0],pos[1],pos[2]);
                         pCut(pop, s, pIndex, pop->pos, pop->vel);
-                        //cutNumber += 1;
-                        //msg(STATUS,"iStop = %li",iStop);
                         iStop--;
-
                     }
                 }
-
             }
-
         }
     }
-
-    //MPI_Allreduce(MPI_IN_PLACE, &cutNumber, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    //msg(STATUS,"cutNumber = %i ",cutNumber);
-    //cutNumber = 0;
 
     MPI_Allreduce(MPI_IN_PLACE, chargeCounter, obj->nObjects, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    //MPI_Allreduce(MPI_IN_PLACE, objectCurrent, nSpecies*obj->nObjects, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     // current is summed when written
 
-
-    //for (long int a=0; a<obj->nObjects; a++) {
-    //  for (long int s=0; s<nSpecies; s++) {
-    //    msg(STATUS,"current for objct %i, and species %i = %f",a,s,objectCurrent[a*nSpecies + s]);
-
-    //  }
-    //}
-
-    //MPI_Allreduce(MPI_IN_PLACE, invNrSurfNod, obj->nObjects, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     // Add the collected charge to the surface nodes on rhoObject.
     for (long int a=0; a<obj->nObjects; a++) {
-
-	  //printf("chargeCounter[a] = %f\n",chargeCounter[a]);
-      //printf("invNrSurfNod[a] = %f\n",invNrSurfNod[a]);
-	  	//int testcounter = 0;
         for (long int b=lookupSurfOff[a]; b<lookupSurfOff[a+1]; b++) {
             val[obj->lookupSurface[b]] += chargeCounter[a]*invNrSurfNod[a];
-			//testcounter += 1;
         }
-		// MPI_Allreduce(MPI_IN_PLACE, &testcounter, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-		// printf("added to %i nodes, should be %f\n",testcounter,(1./invNrSurfNod[a]) );
     }
-    //free(invNrSurfNod);
     free(chargeCounter);
-    //free(nodCorLoc);
-    //free(nodCorGlob);
-
 }
 
 void oSweepBiasSin( PincObject *obj, int nt ){
@@ -870,9 +598,6 @@ void oSweepBiasSin( PincObject *obj, int nt ){
 		if (obj->sweepOn == 1){
 			if (nt>(int)sweepStart && nt<(int)(sweepStart+sweepTime) ){
 				if(nt%stepLength==0){
-					//msg(STATUS,"nt-(int)sweepStart = %i",(nt-(int)sweepStart));
-					//msg(STATUS,"nt-(int)sweepStart = %i",(nt-(int)sweepStart));
-					//msg(STATUS,"(sweepAmp/sweepTime) = %f",((sweepAmp/sweepTime) ));
 					obj->bias[a] = sweepOffset+sweepAmp/2 -((sweepAmp/sweepTime)*((nt-(int)sweepStart)));
 					//obj->bias[a] = sweepOffset+sweepAmp*gsl_sf_cos(sweepTime*(nt-(int)sweepStart));
 				}
@@ -881,161 +606,7 @@ void oSweepBiasSin( PincObject *obj, int nt ){
 			}
 		}
 	}
-	//msg(STATUS,"sweepStart = %f",sweepStart);
-	//msg(STATUS,"sweepEnd = %f",(sweepStart+sweepTime));
 }
-
-//
-// //stores index of particles that are close to an object at the current timestep
-// void oVicinityParticles(Population *pop, PincObject *obj){
-//
-// 	double *val = obj->domain->val;
-// 	int nSpecies = pop->nSpecies;
-// 	int counter = 0;
-// 	long int *sizeProd = obj->domain->sizeProd;
-//
-// 	for(int s=0; s < nSpecies; s++) {
-//
-// 		long int iStart = pop->iStart[s];
-// 		long int iStop = pop->iStop[s];
-//
-// 		for(int i=iStart;i<iStop;i++){
-//
-// 			double *pos = &pop->pos[3*i];
-//
-// 			// Integer parts of position
-// 			int j = (int) pos[0];
-// 			int k = (int) pos[1];
-// 			int l = (int) pos[2];
-//
-// 			// Index of nodes surrounding particle i
-// 			long int p 		= j*3 + k*sizeProd[2] + l*sizeProd[3];
-// 			long int pj 	= p + 3; //sizeProd[1];
-// 			long int pk 	= p + sizeProd[2];
-// 			long int pjk 	= pk + 3; //sizeProd[1];
-// 			long int pl 	= p + sizeProd[3];
-// 			long int pjl 	= pl + 3; //sizeProd[1];
-// 			long int pkl 	= pl + sizeProd[2];
-// 			long int pjkl 	= pkl + 3; //sizeProd[1];
-//
-// 			// All neighbours must be part of bounding box, value of obj->domain->val
-// 			// at a vicinity node is set to 2, obj->domain->val set to 1 for object itself.
-//             // When particle does not have an object node as a neighbour, this sum will 16
-// 			int sum = val[p]+val[pj]+val[pk]+val[pjk]+val[pl]+val[pjl]+val[pkl]+val[pjkl];
-//
-// 			if(sum < 16 && sum > 0){
-// 				pop->objVicinity[counter] = i;
-// 				counter++;
-// 			}
-// 		}
-// 	}
-// }
-
-//Relies on a courant number < 1 (otherwise particle might be inside object)
-//checks which particles in object vicinity will collide => overwrites pop->collisions
-// void oFindParticleCollisions(Population *pop, PincObject *obj){
-//
-//     long int *lookupIntOff = obj->lookupInteriorOffset;
-//     long int *sizeProd = obj->domain->sizeProd;
-//
-//     oVicinityParticles(pop, obj);
-//     long int *vicinity = pop->objVicinity;
-//     long int nCloseParticles = sizeof(vicinity) / sizeof(vicinity[0]);
-//     long int counter = 0;
-//     alSetAll(pop->collisions, nCloseParticles, 0);
-//
-//
-//     for(int i=0;i<nCloseParticles;i++){
-//
-//         double *pos = &pop->pos[3*i];
-//         double *vel = &pop->vel[3*i];
-//         double *nextPos;
-//         adAdd(pos,vel,nextPos,3);
-//
-//         // Integer parts of position in next time step
-//         int j = (int) nextPos[0];
-//         int k = (int) nextPos[1];
-//         int l = (int) nextPos[2];
-//
-//         long int p = j + k*sizeProd[2] + l*sizeProd[3];
-//
-//         // Check whether p is one of the object nodes
-//         for (long int a=0; a<obj->nObjects; a++) {
-//             for (long int b=lookupIntOff[a]; b<lookupIntOff[a+1]; b++) {
-//                 if ((obj->lookupInterior[b])==p) {
-//                     pop->collisions[counter] = p; // CHECK THIS: p is particle position, not index. The index is 3*i, or nDims*i
-//                     counter++;
-//                 }
-//             }
-//         }
-//     }
-// }
-
-//Moves a particle according to the type of collision, also creates and removes new particles
-// void oParticleCollision(Population *pop, PincObject *obj, long int i){
-//
-//     void (*collisionType)(Population *);
-//
-//     pFindCollisionType(pop, obj, i, collisionType);
-//
-//     //collisionType();
-// }
-
-
-//Finds nearest 3 object surface nodes to a specific particle of index p
-//3 object surface nodes needed to compute normal from cross product of surface vectors
-// double *oFindNearestSurfaceNodes(Population *pop, long int particleId, PincObject *obj){
-//
-//     double *pos = NULL;
-//     for(int i=0; i<3; i++){
-//         pos[i] = pop->pos[3*particleId + i];
-//     }
-//
-//
-//     return pos;
-//
-// }
-//
-// bool oParticleIntersection(Population *pop, long int particleId, PincObject *obj){
-//
-//     //find nearest nodes
-//     double *nearest = oFindNearestSurfaceNodes(pop, particleId, obj);
-//
-//     nearest += 0;
-//     return false;
-// }
-//
-// //pos_new = pos_old + vel*delta_t
-// //try http://geomalgorithms.com/a05-_intersect-1.html algorithm
-// //implementation based on https://rosettacode.org/wiki/Find_the_intersection_of_a_line_with_a_plane#C
-// void oFindIntersectPoint(const Population *pop, long int id, double *surfNormal,
-//      double *surfPoint, double *intersect){
-//
-//         double epsilon = 1e-6;
-//         double *pos = &pop->pos[3*id];
-//         double *vel = &pop->vel[3*id];
-//         double *w = NULL;
-//         double *Psi = vel;
-//         int ndotu = adDotProd(vel,surfNormal,3);
-//
-//         if(ndotu < epsilon){
-//             msg(ERROR, "Particle %i, will not collide with any object next timestep!", id);
-//         }
-//         adSub(pos, surfPoint, w, 3);
-//
-//         //Compute intersection
-//         double si = -1.*(double) adDotProd(surfNormal,w,3) / (double) ndotu;
-//         adScale(Psi,3,si);
-//         adAdd(w,Psi,Psi,3);
-//         adAdd(surfPoint,Psi,Psi,3);
-//
-//         intersect[0]=Psi[0], intersect[1]=Psi[1], intersect[1]=Psi[1];
-// }
-
-//void oParticleCollision(Population *pop, PincObject *obj, long int i){
-
-    //msg(WARNING, "Collision types not yet implemented!");
-//}
 
 /*****************************************************************************
  *  ALLOC/DESTRUCTORS
@@ -1056,7 +627,7 @@ PincObject *objoAlloc(const dictionary *ini, const MpiInfo *mpiInfo, Units *unit
 	oReadH5(obj);
     //oCloseH5(obj);
     //Communicate the boundary nodes
-		gHaloOp(setSlice, obj->domain, mpiInfo, TOHALO);
+    gHaloOp(setSlice, obj->domain, mpiInfo, TOHALO);
 
 
     //obj->nObjects
@@ -1074,7 +645,6 @@ PincObject *objoAlloc(const dictionary *ini, const MpiInfo *mpiInfo, Units *unit
     }
     // Make sure each process knows the total number of objects.
     MPI_Allreduce(MPI_IN_PLACE, &nObjects, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-    //msg(WARNING|ALL,"nObjects: %i",nObjects);
 
     obj->nObjects = nObjects;
 
@@ -1102,53 +672,46 @@ PincObject *objoAlloc(const dictionary *ini, const MpiInfo *mpiInfo, Units *unit
 	double *rhoCorr = malloc(capMatrixAllSize*sizeof(*rhoCorr));
 
 	double *invNrSurfNod = malloc(obj->nObjects*sizeof(*invNrSurfNod));
-    // for (long int a=0; a<obj->nObjects; a++) {
-    //     invNrSurfNod[a] = 1.0/(nodCorGlob[(a+1)*(size)]);
-    //     //printf("invNrSurfNod[a] = %f, nodCorGlob[(a+1)*(size+1)] = %li",invNrSurfNod[a],nodCorGlob[(a+1)*(size)]);
-    // }
 
-
-
-  int nSpecies = iniGetInt(ini,"population:nSpecies");
-  double *objectCurrent= malloc(nSpecies*nObjects*sizeof(*objectCurrent));
-  bool biasOn = iniGetInt(ini,"object:biasOn");
-  bool sweepOn = iniGetInt(ini,"object:sweepOn");
-  double *bias = iniGetDoubleArr(ini,"object:bias",nObjects);
-  adScale(bias, nObjects, 1./units->potential);
-  double *origBias = iniGetDoubleArr(ini,"object:bias",nObjects);
-  adScale(origBias, nObjects, 1./units->potential);
-  double sweepTime = iniGetDouble(ini,"object:sweepTime");
-  sweepTime = sweepTime/units->time;
-  double sweepRange= iniGetDouble(ini,"object:sweepRange");
-  sweepRange /= units->potential;
-  //sweepRange /= 2;
-  double sweepOffset= iniGetDouble(ini,"object:sweepOffset");
-  sweepOffset /= units->potential;
-  double sweepStart = iniGetDouble(ini,"object:sweepStart");
-  sweepStart /= units->time;
-  double sweepSteps = iniGetInt(ini,"object:sweepSteps");
-  //double sweepEnd = iniGetDouble(ini,"object:sweepEnd");
-  //sweepEnd /= units->time;
-  //printf("bias=%f\n",bias[0] );
-  //exit(0);
-  obj->biasOn = biasOn;
-  obj->sweepOn = sweepOn;
-  obj->bias = bias;
-  obj->origBias = origBias;
+    int nSpecies = iniGetInt(ini,"population:nSpecies");
+    double *objectCurrent= malloc(nSpecies*nObjects*sizeof(*objectCurrent));
+    bool biasOn = iniGetInt(ini,"object:biasOn");
+    bool sweepOn = iniGetInt(ini,"object:sweepOn");
+    double *bias = iniGetDoubleArr(ini,"object:bias",nObjects);
+    adScale(bias, nObjects, 1./units->potential);
+    double *origBias = iniGetDoubleArr(ini,"object:bias",nObjects);
+    adScale(origBias, nObjects, 1./units->potential);
+    double sweepTime = iniGetDouble(ini,"object:sweepTime");
+    sweepTime = sweepTime/units->time;
+    double sweepRange= iniGetDouble(ini,"object:sweepRange");
+    sweepRange /= units->potential;
+    //sweepRange /= 2;
+    double sweepOffset= iniGetDouble(ini,"object:sweepOffset");
+    sweepOffset /= units->potential;
+    double sweepStart = iniGetDouble(ini,"object:sweepStart");
+    sweepStart /= units->time;
+    double sweepSteps = iniGetInt(ini,"object:sweepSteps");
+    //double sweepEnd = iniGetDouble(ini,"object:sweepEnd");
+    //sweepEnd /= units->time;
+    //printf("bias=%f\n",bias[0] );
+    //exit(0);
+    obj->biasOn = biasOn;
+    obj->sweepOn = sweepOn;
+    obj->bias = bias;
+    obj->origBias = origBias;
     obj->capMatrixAll = capMatrixAll;
     obj->capMatrixAllOffsets = nodCorGlob;
     obj->capMatrixSum = capMatrixSum;
 	obj->deltaPhi = deltaPhi;
 	obj->rhoCorr = rhoCorr;
 	obj->invNrSurfNod = invNrSurfNod;
-  obj->objectCurrent= objectCurrent;
-  obj->sweepTime=sweepTime;
-  obj->sweepRange=sweepRange;
-  obj->sweepOffset=sweepOffset;
-  //obj->sweepEnd=sweepEnd;
-  obj->sweepStart=sweepStart;
-  obj->sweepSteps=sweepSteps;
-
+    obj->objectCurrent= objectCurrent;
+    obj->sweepTime=sweepTime;
+    obj->sweepRange=sweepRange;
+    obj->sweepOffset=sweepOffset;
+    //obj->sweepEnd=sweepEnd;
+    obj->sweepStart=sweepStart;
+    obj->sweepSteps=sweepSteps;
 
     free(nodCorLoc);
 
@@ -1169,10 +732,9 @@ void oFree(PincObject *obj){
 	free(obj->rhoCorr);
 	free(obj->deltaPhi);
 	free(obj->invNrSurfNod);
-  free(obj->objectCurrent);
-  free(obj->bias);
+    free(obj->objectCurrent);
+    free(obj->bias);
     free(obj);
-
 }
 
 void oCloseH5(PincObject *obj){
@@ -1205,500 +767,7 @@ void oReadH5(PincObject *obj){
 
     H5Dclose(dataset);
     H5Pclose(pList);
-
-
 }
-
-// void oReadH5(Grid *grid, const MpiInfo *mpiInfo, const char *name){
-//
-// 	hid_t fileSpace = grid->h5FileSpace;
-// 	hid_t memSpace = grid->h5MemSpace;
-// 	hid_t file = grid->h5;
-// 	double *val = grid->val;
-//
-// 	// Enable collective datawriting
-// 	hid_t pList = H5Pcreate(H5P_DATASET_XFER);
-//     H5Pset_dxpl_mpio(pList, H5FD_MPIO_COLLECTIVE);
-//
-// 	//char name[64];
-// 	//sprintf(name,name);
-//
-// 	hid_t dataset = H5Dopen(file,name,H5P_DEFAULT);
-// 	H5Dread(dataset, H5T_NATIVE_DOUBLE, memSpace, fileSpace, pList, val);
-//
-// 	H5Dclose(dataset);
-// 	H5Pclose(pList);
-//
-// }
-
-
-/******************************************************************************
- *  DEPRECIATED FUNCTION DEFINITIONS
- *****************************************************************************/
-// Compute the capacitance matrix. (one big matrix containing all objects)
-/* void oComputeCapacitanceMatrix_v1(PincObject *obj, const dictionary *ini, const MpiInfo *mpiInfo) {
-
-    int rank = mpiInfo->mpiRank;
-    int size = mpiInfo->mpiSize;
-    long int *lookupSurface = obj->lookupSurface;
-    long int *lookupSurfaceOffset = obj->lookupSurfaceOffset;
-
-    // Allocate and initialise the structures to run the potential solver.
-    void (*solverInterface)() = select(ini, "methods:poisson", mgSolver_set, sSolver_set);
-    void (*solve)() = NULL;
-    void *(*solverAlloc)() = NULL;
-    void (*solverFree)() = NULL;
-    solverInterface(&solve, &solverAlloc, &solverFree);
-
-    Grid *rho = gAlloc(ini, SCALAR);
-    Grid *phi = gAlloc(ini, SCALAR);
-
-    void *solver = solverAlloc(ini, rho, phi);
-
-    // Set Rho to zero.
-    gZero(rho);
-
-    // Find the number of surface nodes for each object.
-    long int *nodesCoreLocal = malloc((size+1)*sizeof(*nodesCoreLocal));
-    long int *nodesCoreGlobal = malloc(obj->nObjects*(size+1)*sizeof(*nodesCoreGlobal));
-    long int nodesThisCore;
-    for (long int a=0; a<obj->nObjects; a++) {
-
-        nodesThisCore = lookupSurfaceOffset[a+1] - lookupSurfaceOffset[a];
-
-        // Let every core know how many surface nodes everybody has.
-        MPI_Allgather(&nodesThisCore, 1, MPI_LONG, nodesCoreLocal, 1, MPI_LONG, MPI_COMM_WORLD);
-
-        for(long int i=size-1;i>-1;i--) nodesCoreLocal[i+1]=nodesCoreLocal[i];
-        nodesCoreLocal[0] = 0;
-        alCumSum(nodesCoreLocal+1,nodesCoreLocal,size);
-
-        for (long int b=0; b<size+1; b++) nodesCoreGlobal[a*(size+1)+b] = nodesCoreLocal[b];
-    }
-
-    // Find the size and initialise the array holding the capacitance matrix.
-    long int capMatrixSize = 0;
-    for (long int a=0; a<obj->nObjects; a++) {
-        capMatrixSize +=nodesCoreGlobal[a*(size+1)+size];
-    }
-
-    // Initialise the capacitance matrix and its inverse.
-    double *capMatrix = malloc( (capMatrixSize*capMatrixSize) * sizeof(*capMatrix));
-    double *invCapMatrix = malloc( (capMatrixSize*capMatrixSize) * sizeof(*capMatrix));
-    adSetAll(capMatrix,capMatrixSize*capMatrixSize,0);
-    adSetAll(invCapMatrix,capMatrixSize*capMatrixSize,0);
-
-    // Compute the actual capacitance matrix. (one big matrix containing all objects)
-    long int meuh;
-    long int moo = 0;
-    long int *boo = malloc( (size+1) * sizeof(*boo));
-
-    boo[0] = 0;
-    MPI_Allgather(&(lookupSurfaceOffset[obj->nObjects]), 1, MPI_LONG, boo+1, 1, MPI_LONG, MPI_COMM_WORLD);
-    alCumSum(boo+1,boo,size);
-
-    for (long int r=0; r<size; r++) {
-        if (r==rank) {
-            msg(STATUS|ALL, "Computing the capacitance matrix components on core %i out of %i.", r+1, size);
-
-            meuh = lookupSurfaceOffset[obj->nObjects];
-        }
-        MPI_Bcast(&meuh, 1, MPI_LONG, r, MPI_COMM_WORLD);
-
-        for ( long int i=0; i<meuh; i++) {
-            if (r==rank) {
-                // Set the surface node charge to 1.
-                rho->val[lookupSurface[i]] = 1;
-            }
-            // Solve for the potential.
-            solve(solver, rho, phi, mpiInfo);
-
-            if (r==rank) {
-                // Set the surface node back to zero.
-                rho->val[lookupSurface[i]] = 0;
-            }
-
-            // Fill column i of the capacitance matrix.
-            for (long int k=0; k<lookupSurfaceOffset[obj->nObjects]; k++) {
-                capMatrix[(boo[rank]+k) * capMatrixSize + moo + i] = phi->val[lookupSurface[k]];
-            }
-        }
-        moo += meuh;
-    }
-
-    // Make sure every core has the complete matrix (needed for BLAS).
-    MPI_Allreduce(MPI_IN_PLACE, capMatrix, (capMatrixSize*capMatrixSize), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-    if (rank==0) {
-        for (int lll=0; lll<3; lll++){
-            adPrint(&capMatrix[lll*capMatrixSize],capMatrixSize);
-        }
-    }
-
-    // Compute the inverse of the capacitance matrix.
-    // Actually, the inverse is the capacitance matrix. Probably have to rethink the variable names.
-    gsl_matrix_view A = gsl_matrix_view_array(capMatrix, capMatrixSize, capMatrixSize);
-    gsl_matrix_view invA = gsl_matrix_view_array(invCapMatrix, capMatrixSize, capMatrixSize);
-
-    int s;
-    gsl_permutation *p = gsl_permutation_alloc(capMatrixSize);
-    gsl_linalg_LU_decomp(&A.matrix, p, &s);
-    gsl_linalg_LU_invert(&A.matrix, p, &invA.matrix);
-
-
-    // Compute here the inverse total sum of elements in the capacitance matrix (needed later).
-    double capMatrixInvSum = 1/adSum(invCapMatrix,capMatrixSize*capMatrixSize);
-
-    // Add to object
-    obj->capMatrix = invCapMatrix;
-    obj->capMatrixInvSum = capMatrixInvSum;
-
-    //alPrint(&capMatrixSize,1);
-    //for (int i=0; i<capMatrixSize; i++) {
-    //    for (int j=0; j<capMatrixSize; j++) {
-    //        if (i>217 && j>217) {
-    //            invCapMatrix[i*capMatrixSize+j] = 1;
-    //        } else {
-    //            invCapMatrix[i*capMatrixSize+j] = 0;
-    //        }
-    //    }
-    //}
-
-    // Need to compute here the bits needed for the mutual impedance stuff...
-    // Remember, every core has the complete capacitance matrix.
-
-    double *needCoffeeMatrix = malloc( (obj->nObjects*obj->nObjects) * sizeof(*needCoffeeMatrix));
-    double *invNeedCoffeeMatrix = malloc( (obj->nObjects*obj->nObjects) * sizeof(*invNeedCoffeeMatrix));
-    adSetAll(needCoffeeMatrix,obj->nObjects*obj->nObjects,0);
-    adSetAll(invNeedCoffeeMatrix,obj->nObjects*obj->nObjects,0);
-
-    long int totalNodesObject;
-    long int totalNodesObjectCumA = 0;
-    long int totalNodesObjectCumB = 0;
-
-    for (int a = 0; a<obj->nObjects; a++) {
-        totalNodesObject = nodesCoreGlobal[a*(size+1)+size];
-        nodesThisCore = lookupSurfaceOffset[a+1] - lookupSurfaceOffset[a];
-        msg(WARNING|ALL,"Object %i, total %i, this core %i", a, totalNodesObject, nodesThisCore);
-
-        totalNodesObjectCumB = 0;
-        for (int b = 0; b<obj->nObjects; b++) {
-            for (long int i=0;i<totalNodesObject;i++) {
-                for (long int j=0;j<nodesThisCore;j++) {
-                    needCoffeeMatrix[a*obj->nObjects + b] += invCapMatrix[(capMatrixSize*totalNodesObjectCumA) + j*capMatrixSize + totalNodesObjectCumB + i];
-                }
-            }
-            totalNodesObjectCumB+=totalNodesObject;
-        }
-        totalNodesObjectCumA+=totalNodesObject;
-    }
-
-    //for (int lll=0; lll<obj->nObjects; lll++) {
-    //    adPrint(&needCoffeeMatrix[lll*obj->nObjects],obj->nObjects);
-    //}
-
-    // Make sure every core has the complete matrix (needed for BLAS).
-    MPI_Allreduce(MPI_IN_PLACE, needCoffeeMatrix, (obj->nObjects*obj->nObjects), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-    for (int lll=0; lll<obj->nObjects; lll++) {
-        adPrint(&needCoffeeMatrix[lll*obj->nObjects],obj->nObjects);
-    }
-
-    gsl_matrix_view B = gsl_matrix_view_array(needCoffeeMatrix, obj->nObjects, obj->nObjects);
-    gsl_matrix_view invB = gsl_matrix_view_array(invNeedCoffeeMatrix, obj->nObjects, obj->nObjects);
-
-    int t;
-    gsl_permutation *q = gsl_permutation_alloc(obj->nObjects);
-    gsl_linalg_LU_decomp(&B.matrix, q, &t);
-    gsl_linalg_LU_invert(&B.matrix, q, &invB.matrix);
-
-
-    // Add to object
-    obj->invNeedCoffeeMatrix = invNeedCoffeeMatrix;
-
-    solverFree(solver);
-} */
-
-//Find all the object nodes which are part of the object surface.
-/* void oFindObjectSurfaceNodes(PincObject *obj, const MpiInfo *mpiInfo) {
-
-    long int *sizeProd = obj->domain->sizeProd;
-    double *val = obj->domain->val;
-
-
-    // Initialise the array storing the offsets for the surface nodes in the lookup table.
-    long int *lookupSurfOff = malloc((obj->nObjects+1)*sizeof(*lookupSurfOff));
-    alSetAll(lookupSurfOff,obj->nObjects+1,0);
-
-    // Find the 8 neighbour cells of each non-ghost node.
-    long int *myNB = malloc(9*sizeof(*myNB));
-    // Find the ofsetts first.
-    for (long int a=0; a<obj->nObjects; a++) {
-        for (long int b=0; b<sizeProd[obj->domain->rank]; b++) {
-            if (!oIsGhostNode(obj->domain, b)) {
-                myNB[0] = b;    // me on node i,j,k
-                myNB[1] = myNB[0];                  // cell i,j,k
-                myNB[2] = myNB[0] - sizeProd[3];    // cell i,j,k-1
-                myNB[3] = myNB[0] - sizeProd[1];                    // cell i-1,j,k
-                myNB[4] = myNB[0] - sizeProd[1] - sizeProd[3];      // cell i-1,j,k-1
-                myNB[5] = myNB[0] - sizeProd[2];                    // cell i,j-1,k
-                myNB[6] = myNB[0] - sizeProd[2] - sizeProd[3];      // cell i,j-1,k-1
-                myNB[7] = myNB[0] - sizeProd[2] - sizeProd[1];      // cell i-1,j-1,k
-                myNB[8] = myNB[0] - sizeProd[2] - sizeProd[1] - sizeProd[3];   // cell i-1,j-1,k-1
-
-                int d=0;
-                if (val[myNB[1]]>(a+0.5) && val[myNB[1]]<(a+1.5)) d++;
-                if (val[myNB[2]]>(a+0.5) && val[myNB[2]]<(a+1.5)) d++;
-                if (val[myNB[3]]>(a+0.5) && val[myNB[3]]<(a+1.5)) d++;
-                if (val[myNB[4]]>(a+0.5) && val[myNB[4]]<(a+1.5)) d++;
-                if (val[myNB[5]]>(a+0.5) && val[myNB[5]]<(a+1.5)) d++;
-                if (val[myNB[6]]>(a+0.5) && val[myNB[6]]<(a+1.5)) d++;
-                if (val[myNB[7]]>(a+0.5) && val[myNB[7]]<(a+1.5)) d++;
-                if (val[myNB[8]]>(a+0.5) && val[myNB[8]]<(a+1.5)) d++;
-
-                // Check if on surface.
-                if (d<7.5 && d>0) {
-                    lookupSurfOff[a+1]++;
-                }
-            }
-        }
-    }
-    alCumSum(lookupSurfOff+1,lookupSurfOff,obj->nObjects);
-
-    // Initialise and compute the lookup table.
-    long int *lookupSurf = malloc((lookupSurfOff[obj->nObjects])*sizeof(*lookupSurf));
-    alSetAll(lookupSurf,lookupSurfOff[obj->nObjects]+1,0);
-
-    long int *index = malloc((obj->nObjects)*sizeof(*index));
-    for (long int i=0; i<obj->nObjects; i++) {
-        index[i]=lookupSurfOff[i];
-    }
-
-    for (long int a=0; a<obj->nObjects; a++) {
-        for (long int b=0; b<obj->domain->sizeProd[obj->domain->rank]; b++) {
-            if (!oIsGhostNode(obj->domain, b)) {
-                myNB[0] = b;    // me on node i,j,k
-                myNB[1] = myNB[0];                  // cell i,j,k
-                myNB[2] = myNB[0] - sizeProd[3];    // cell i,j,k-1
-                myNB[3] = myNB[0] - sizeProd[1];                    // cell i-1,j,k
-                myNB[4] = myNB[0] - sizeProd[1] - sizeProd[3];      // cell i-1,j,k-1
-                myNB[5] = myNB[0] - sizeProd[2];                    // cell i,j-1,k
-                myNB[6] = myNB[0] - sizeProd[2] - sizeProd[3];      // cell i,j-1,k-1
-                myNB[7] = myNB[0] - sizeProd[2] - sizeProd[1];                  // cell i-1,j-1,k;
-                myNB[8] = myNB[0] - sizeProd[2] - sizeProd[1] - sizeProd[3];    // cell i-1,j-1,k-1
-
-                int d=0;
-                if (val[myNB[1]]>(a+0.5) && val[myNB[1]]<(a+1.5)) d++;
-                if (val[myNB[2]]>(a+0.5) && val[myNB[2]]<(a+1.5)) d++;
-                if (val[myNB[3]]>(a+0.5) && val[myNB[3]]<(a+1.5)) d++;
-                if (val[myNB[4]]>(a+0.5) && val[myNB[4]]<(a+1.5)) d++;
-                if (val[myNB[5]]>(a+0.5) && val[myNB[5]]<(a+1.5)) d++;
-                if (val[myNB[6]]>(a+0.5) && val[myNB[6]]<(a+1.5)) d++;
-                if (val[myNB[7]]>(a+0.5) && val[myNB[7]]<(a+1.5)) d++;
-                if (val[myNB[8]]>(a+0.5) && val[myNB[8]]<(a+1.5)) d++;
-
-                // Check if on surface.
-                if (d<7.5 && d>0) {
-                    lookupSurf[index[a]] = myNB[0];
-                    index[a]++;
-                }
-            }
-        }
-    }
-
-    // Add to object.
-    obj->lookupSurface = lookupSurf;
-    obj->lookupSurfaceOffset = lookupSurfOff;
-}
- */
-//
-// //depreciated...
-// void oFindObjectSurfaceNodes_v1(PincObject *obj) {
-//
-//     long int *sizeProd = obj->domain->sizeProd;
-//
-//     //if(oIsGhostNode(obj->domain, 10439)) printf("test\n");
-//
-//     long int *lookupSurfaceOffset = malloc((obj->nObjects+1)*\//
-//                                            sizeof(*lookupSurfaceOffset));
-//     for (long int i=0; i<obj->nObjects+1; i++) {
-//         lookupSurfaceOffset[i] = 0;
-//     }
-//
-//     long int *meNeighbours = malloc(7*sizeof(*meNeighbours));
-//     for (long int a=0; a<obj->nObjects; a++) {
-//         for (long int b=0; b<obj->domain->sizeProd[obj->domain->rank]; b++) {
-//             if (obj->domain->val[b]>0.5 && !oIsGhostNode(obj->domain, b)) {
-//                 // My neighbours
-//                 meNeighbours[0] = b; // me
-//                 meNeighbours[1] = meNeighbours[0] + sizeProd[1]; // right
-//                 meNeighbours[2] = meNeighbours[0] - sizeProd[1]; // left
-//                 meNeighbours[3] = meNeighbours[0] + sizeProd[2]; // up
-//                 meNeighbours[4] = meNeighbours[0] - sizeProd[2]; // down
-//                 meNeighbours[5] = meNeighbours[0] + sizeProd[3]; // back
-//                 meNeighbours[6] = meNeighbours[0] - sizeProd[3]; // front
-//
-//                 int d=0;
-//                 if (obj->domain->val[meNeighbours[1]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[2]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[3]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[4]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[5]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[6]]>(a+0.5)) d++;
-//
-//                 // Check if surface
-//                 if (d<5.5) {
-//                     lookupSurfaceOffset[a+1]++;
-//                 }
-//             }
-//         }
-//         //MPI_Allreduce(MPI_IN_PLACE, &lookupSurfaceOffset[a+1], 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-//     }
-//
-//     alCumSum(lookupSurfaceOffset+1,lookupSurfaceOffset,obj->nObjects);
-//
-//
-//     //Second go through to fill the table.
-//     long int *lookupSurface = malloc((lookupSurfaceOffset[obj->nObjects])*\//
-//                                      sizeof(*lookupSurface));
-//     for (long int i=0; i<lookupSurfaceOffset[obj->nObjects]+1; i++) {
-//         lookupSurface[i]=0;
-//     }
-//
-//     long int *index = malloc((obj->nObjects)*sizeof(*index));
-//     for (long int i=0; i<obj->nObjects; i++) {
-//         index[i]=lookupSurfaceOffset[i];
-//     }
-//
-//     for (long int a=0; a<obj->nObjects; a++) {
-//         for (long int b=0; b<obj->domain->sizeProd[obj->domain->rank]; b++) {
-//             if (obj->domain->val[b]>0.5 && !oIsGhostNode(obj->domain, b)) {
-//                 // My neighbours
-//                 meNeighbours[0] = b; // me
-//                 meNeighbours[1] = meNeighbours[0] + sizeProd[1]; // right
-//                 meNeighbours[2] = meNeighbours[0] - sizeProd[1]; // left
-//                 meNeighbours[3] = meNeighbours[0] + sizeProd[2]; // up
-//                 meNeighbours[4] = meNeighbours[0] - sizeProd[2]; // down
-//                 meNeighbours[5] = meNeighbours[0] + sizeProd[3]; // back
-//                 meNeighbours[6] = meNeighbours[0] - sizeProd[3]; // front
-//
-//                 int d=0;
-//                 if (obj->domain->val[meNeighbours[1]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[2]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[3]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[4]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[5]]>(a+0.5)) d++;
-//                 if (obj->domain->val[meNeighbours[6]]>(a+0.5)) d++;
-//
-//                 // Check if boundary
-//                 if (d<5.5) {
-//                     lookupSurface[index[a]] = meNeighbours[0];
-//                     index[a]++;
-//                 }
-//             }
-//         }
-//     }
-//
-//     // Add to object
-//     obj->lookupSurface = lookupSurface;
-//     obj->lookupSurfaceOffset = lookupSurfaceOffset;
-// }
-
-// Construct and solve equation 5 in Miyake_Usui_PoP_2009
-/* void oApplyCapacitanceMatrixoApplyCapacitanceMatrix_v1(Grid *rho, const Grid *phi, const PincObject *obj, const MpiInfo *mpiInfo){
-
-    //int rank = mpiInfo->mpiRank;
-    int size = mpiInfo->mpiSize;
-    long int *lookupSurface = obj->lookupSurface;
-    long int *lookupSurfaceOffset = obj->lookupSurfaceOffset;
-    double *capMatrix = obj->capMatrix;
-    double *invNeedCoffeeMatrix = obj->invNeedCoffeeMatrix;
-
-    // Compute the righthand components for the needCoffee bit.
-    double *needCoffeeRight = malloc( (obj->nObjects) * sizeof(*needCoffeeRight));
-    adSetAll(needCoffeeRight,obj->nObjects,0);
-    double *dummy = malloc( (obj->nObjects) * sizeof(*dummy));
-    adSetAll(dummy,obj->nObjects,0);
-
-
-
-    // Find the number of surface nodes for each object.
-    long int *nodesCoreLocal = malloc((size+1)*sizeof(*nodesCoreLocal));
-    long int *nodesCoreGlobal = malloc(obj->nObjects*(size+1)*sizeof(*nodesCoreGlobal));
-    long int nodesThisCore;
-
-    for (long int a=0; a<obj->nObjects; a++) {
-
-        nodesThisCore = lookupSurfaceOffset[a+1] - lookupSurfaceOffset[a];
-
-        // Let every core know how many surface nodes everybody has.
-        MPI_Allgather(&nodesThisCore, 1, MPI_LONG, nodesCoreLocal, 1, MPI_LONG, MPI_COMM_WORLD);
-
-        for(long int i=size-1;i>-1;i--) nodesCoreLocal[i+1]=nodesCoreLocal[i];
-        nodesCoreLocal[0] = 0;
-        alCumSum(nodesCoreLocal+1,nodesCoreLocal,size);
-
-        for (long int b=0; b<size+1; b++) nodesCoreGlobal[a*(size+1)+b] = nodesCoreLocal[b];
-    }
-
-    // Find the size and initialise the array holding the capacitance matrix.
-    long int capMatrixSize = 0;
-    for (long int a=0; a<obj->nObjects; a++) {
-        capMatrixSize +=nodesCoreGlobal[a*(size+1)+size];
-    }
-
-
-
-    long int totalNodesObject = 0;
-    long int totalNodesObjectCumA = 0;
-    long int totalNodesObjectCumB = 0;
-
-    for (int a = 0; a<obj->nObjects; a++) {
-        totalNodesObject = nodesCoreGlobal[a*(size+1)+size];
-        nodesThisCore = lookupSurfaceOffset[a+1] - lookupSurfaceOffset[a];
-
-        totalNodesObjectCumB = 0;
-        for (int b = 0; b<obj->nObjects; b++) {
-
-            for (long int i=0;i<nodesCoreGlobal[b*(size+1)+size];i++) {
-                for (long int j=0;j<(lookupSurfaceOffset[b+1] - lookupSurfaceOffset[b]);j++) {
-
-                    // No rank needed here, that's suspicious...
-                    dummy[b] += capMatrix[(capMatrixSize*totalNodesObjectCumA) +j*capMatrixSize + totalNodesObjectCumB + i] * phi->val[lookupSurface[lookupSurfaceOffset[b] + j]];
-
-                }
-            }
-            totalNodesObjectCumB+=totalNodesObject;
-        }
-        totalNodesObjectCumA+=totalNodesObject;
-        for (int b = 0; b<obj->nObjects; b++) {
-            needCoffeeRight[a] += dummy[b];
-        }
-    }
-    MPI_Allreduce(MPI_IN_PLACE, needCoffeeRight, (obj->nObjects), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-    // Now compute the potentials on each object.
-    double *phiC = malloc( (obj->nObjects) * sizeof(*phiC));
-    adSetAll(phiC,obj->nObjects,0);
-
-    for (int i=0; i<obj->nObjects; i++) {
-        for (int j=0; j<obj->nObjects; j++) {
-            phiC[i] = invNeedCoffeeMatrix[i*obj->nObjects+j]*needCoffeeRight[j];
-        }
-    }
-
-    // for testing purposes:
-    for (int i=0; i<obj->nObjects; i++) { phiC[i] = 0.5; }
-
-    // compute deltaPhi
-    // compute eq. 5
-    // add charge corrections.
-
-
-
-} */
-
-
 
 static void oMode(dictionary *ini){
 
@@ -1749,11 +818,9 @@ static void oMode(dictionary *ini){
     Grid *rhoObj = gAlloc(ini, SCALAR,mpiInfo);     // for capMatrix - objects
 	Grid *phi = gAlloc(ini, SCALAR,mpiInfo);
 
-
-
 	void *solver = solverAlloc(ini, rho, phi, mpiInfo);
 
-    PincObject *obj = objoAlloc(ini,mpiInfo,units);              // for capMatrix - objects
+    PincObject *obj = objoAlloc(ini,mpiInfo,units); // for capMatrix - objects
 //TODO: look into multigrid E,rho,rhoObj
 
 	// Creating a neighbourhood in the rho to handle migrants
@@ -1785,27 +852,25 @@ static void oMode(dictionary *ini){
   // oReadH5(obj, mpiInfo);
 
 
-    //msg(STATUS,"opening obj file");
-		gOpenH5(ini, rhoObj, mpiInfo, units, units->chargeDensity, "rhoObj");        // for capMatrix - objects
-		//oOpenH5(ini, obj, mpiInfo, units, units->chargeDensity, "object");          // for capMatrix - objects
-		//oReadH5(obj->domain, mpiInfo, "Object");
-
-    //msg(STATUS,"done");
+    gOpenH5(ini, rhoObj, mpiInfo, units, units->chargeDensity, "rhoObj"); // for capMatrix - objects
+    //oOpenH5(ini, obj, mpiInfo, units, units->chargeDensity, "object"); // for capMatrix - objects
+    //oReadH5(obj->domain, mpiInfo, "Object");
 
 
-		//Count the number of objects and fill the lookup tables.
-		// This is done in oAlloc now....
 
-		//oFillLookupTables(obj,mpiInfo);
-		// Find all the object nodes which are part of the object surface.
-		//oFindObjectSurfaceNodes(obj, mpiInfo);
+    //Count the number of objects and fill the lookup tables.
+    // This is done in oAlloc now....
+
+    //oFillLookupTables(obj,mpiInfo);
+    // Find all the object nodes which are part of the object surface.
+    //oFindObjectSurfaceNodes(obj, mpiInfo);
 
 
 	hid_t history = xyOpenH5(ini,"history");
 	pCreateEnergyDatasets(history,pop);
-  xyCreateDataset(history,"/current/electrons/dataset");
-  xyCreateDataset(history,"/current/ions/dataset");
-  xyCreateDataset(history,"/potential/dataset");
+    xyCreateDataset(history,"/current/electrons/dataset");
+    xyCreateDataset(history,"/current/ions/dataset");
+    xyCreateDataset(history,"/potential/dataset");
 
 	// Add more time series to history if you want
 	// xyCreateDataset(history,"/group/group/dataset");
@@ -1825,12 +890,8 @@ static void oMode(dictionary *ini){
 	//pVelMaxwell(ini, pop, rng);
 	double maxVel = iniGetDouble(ini,"population:maxVel");
 
-
-
-
 	// Perturb particles
 	//pPosPerturb(ini, pop, mpiInfo);
-
 
 	//add influx of new particles on boundary
 	pPurgeGhost(pop, rho);
@@ -1841,17 +902,14 @@ static void oMode(dictionary *ini){
 
 	pFillGhost(ini,rho,pop,rng);
 
-
-
-
 	/*
 	 * INITIALIZATION (E.g. half-step)
 	 */
 
     // Clean objects from any charge first.
-    gZero(rhoObj);                                          // for capMatrix - objects
-    oCollectObjectCharge(pop, rhoObj, obj, mpiInfo);        // for capMatrix - objects
-    gZero(rhoObj);                                          // for capMatrix - objects
+    gZero(rhoObj);                                   // for capMatrix - objects
+    oCollectObjectCharge(pop, rhoObj, obj, mpiInfo); // for capMatrix - objects
+    gZero(rhoObj);                                   // for capMatrix - objects
 
 
 	// Get initial charge density
@@ -1863,8 +921,7 @@ static void oMode(dictionary *ini){
 
 	// Get initial E-field
 
-
-  //gBnd(phi, mpiInfo);
+    //gBnd(phi, mpiInfo);
 	solve(solver, rho, phi, mpiInfo);
 	//gNeutralizeGrid(phi, mpiInfo);
 	//gBnd(phi, mpiInfo);
@@ -1876,17 +933,15 @@ static void oMode(dictionary *ini){
 	gMul(E, -1.);
 	gBnd(E, mpiInfo);
 
-
-  //Boris parameters
-  int nSpecies = pop->nSpecies;
+    //Boris parameters
+    int nSpecies = pop->nSpecies;
 	double *S = (double*)malloc((3)*(nSpecies)*sizeof(double));
 	double *T = (double*)malloc((3)*(nSpecies)*sizeof(double));
 
-  // add External E
+    // add External E
 	//gZero(E); // for testing Boris
 	//gAddTo(Ext); //needs grid definition of Eext
   	puAddEext(ini, pop, E); // adds same value to whole grid
-
 
   	gMul(E, 0.5);
 	puGet3DRotationParameters(ini, T, S, 0.5);
@@ -1913,8 +968,6 @@ static void oMode(dictionary *ini){
         msg(STATUS, "Nr. of particles s=0 %i: ",totPs0);
 		msg(STATUS, "Nr. of particles s=1 %i: ",totPs1);
 
-
-
 		// Check that no particle moves beyond a cell (mostly for debugging)
 		pVelAssertMax(pop,maxVel);
 
@@ -1924,7 +977,7 @@ static void oMode(dictionary *ini){
 		// oRayTrace(pop, obj, deltaRho); <- do we need this still???
 
 		puMove(pop); //puMove(pop, obj); Do not change functions such that PINC does
-    // not work in other run modes!
+        // not work in other run modes!
 
 		//add influx of new particles on boundary
 		pPurgeGhost(pop, rho);
@@ -1942,13 +995,11 @@ static void oMode(dictionary *ini){
         // Collect the charges on the objects.
         oCollectObjectCharge(pop, rhoObj, obj, mpiInfo);    // for capMatrix - objects
 
-
 		// Compute charge density
 		distr(pop, rho,rho_e,rho_i);
 		gHaloOp(addSlice, rho, mpiInfo, FROMHALO);
 		gHaloOp(addSlice, rho_e, mpiInfo, FROMHALO);
 		gHaloOp(addSlice, rho_i, mpiInfo, FROMHALO);
-
 
         // Keep writing Rho here.
 
@@ -1956,12 +1007,12 @@ static void oMode(dictionary *ini){
 		gAddTo(rho, rhoObj);
 
         //gBnd(phi, mpiInfo);
-        solve(solver, rho, phi, mpiInfo);                   // for capMatrix - objects
+        solve(solver, rho, phi, mpiInfo); // for capMatrix - objects
 		//gNeutralizeGrid(phi, mpiInfo);
 		//gBnd(phi, mpiInfo);
         // Second run with solver to account for charges
 		oSweepBiasSin( obj, n );
-		oApplyCapacitanceMatrix(rho, phi, obj, mpiInfo, units);    // for capMatrix - objects
+		oApplyCapacitanceMatrix(rho, phi, obj, mpiInfo, units); // for capMatrix - objects
 
 		//gBnd(phi, mpiInfo);
 		solve(solver, rho, phi, mpiInfo);
@@ -2019,9 +1070,9 @@ static void oMode(dictionary *ini){
 		// }
 
 		pWriteEnergy(history,pop,(double)n,units);
-    xyWrite(history,"/current/electrons/dataset",(double)n,units->current*obj->objectCurrent[0],MPI_SUM);
-    xyWrite(history,"/current/ions/dataset",(double)n,units->current*obj->objectCurrent[1],MPI_SUM);
-	xyWrite(history,"/potential/dataset",(double)n,units->potential*(*obj->bias),MPI_MAX);
+        xyWrite(history,"/current/electrons/dataset",(double)n,units->current*obj->objectCurrent[0],MPI_SUM);
+        xyWrite(history,"/current/ions/dataset",(double)n,units->current*obj->objectCurrent[1],MPI_SUM);
+        xyWrite(history,"/potential/dataset",(double)n,units->potential*(*obj->bias),MPI_MAX);
 	}
 
 	//if(mpiInfo->mpiRank==0) {
@@ -2049,25 +1100,22 @@ static void oMode(dictionary *ini){
 
 	xyCloseH5(history);
 
-  // Free memory
-  // sFree(solver);
-  // mgFreeSolver(solver);
-  solverFree(solver);
-  gFree(rho);
-  gFree(rho_e);
-  gFree(rho_i);
-  gFree(phi);
-  free(S);
-  free(T);
+    // Free memory
+    // sFree(solver);
+    // mgFreeSolver(solver);
+    solverFree(solver);
+    gFree(rho);
+    gFree(rho_e);
+    gFree(rho_i);
+    gFree(phi);
+    free(S);
+    free(T);
 
-  gFree(E);
-  pFree(pop);
-  uFree(units);
+    gFree(E);
+    pFree(pop);
+    uFree(units);
     gFree(rhoObj);          // for capMatrix - objects
     oFree(obj);             // for capMatrix - objects
-
-
-
 
 	gsl_rng_free(rngSync);
 	gsl_rng_free(rng);

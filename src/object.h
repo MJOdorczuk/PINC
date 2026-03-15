@@ -121,7 +121,8 @@ void oReadH5(PincObject *objobj);
   * @param	obj		test
   * TODO:
   */
- //long int oGatherSurfaceNodes(PincObject *objobj, long int *nodCorLoc,long int *nodCorGlob,long int *lookupSurfOff, const MpiInfo *mpiInfo);
+ //long int oGatherSurfaceNodes(PincObject *objobj, long int *nodCorLoc,
+ // long int *nodCorGlob,long int *lookupSurfOff, const MpiInfo *mpiInfo);
 
 
 void oComputeCapacitanceMatrix(PincObject *objobj, dictionary *ini,

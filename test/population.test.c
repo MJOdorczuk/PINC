@@ -39,18 +39,22 @@ static int testPCut(){
 	pCut(pop,1,33,posV,velV);
 
 	double expected[] = {3,4,5};
-	utAssert(adEq(posV,expected,3,pow(10,-14)),"Particle position extracted incorrectly");
+	utAssert(adEq(posV,expected,3,pow(10,-14)),
+		"Particle position extracted incorrectly");
 	adSet(expected,3,30.,40.,50.);
-	utAssert(adEq(velV,expected,3,pow(10,-14)),"Particle velocity extracted incorrectly");
+	utAssert(adEq(velV,expected,3,pow(10,-14)),
+		"Particle velocity extracted incorrectly");
 
 	utAssert(pop->iStop[1]==13,"Particle counter not properly updated");
 
 	pCut(pop,1,33,posV,velV);
 
 	adSet(expected,3,9.,10.,11.);
-	utAssert(adEq(posV,expected,3,pow(10,-14)),"Particle position fill-in malfunctioning");
+	utAssert(adEq(posV,expected,3,pow(10,-14)),
+		"Particle position fill-in malfunctioning");
 	adSet(expected,3,90.,100.,110.);
-	utAssert(adEq(velV,expected,3,pow(10,-14)),"Particle velocity fill-in malfunctioning");
+	utAssert(adEq(velV,expected,3,pow(10,-14)),
+		"Particle velocity fill-in malfunctioning");
 
 	utAssert(pop->iStop[1]==12,"Particle counter not properly updated");
 

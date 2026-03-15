@@ -112,12 +112,16 @@ static int testPuAcc3D1(){
 	puAcc3D1(pop,grid);
 
 	// Specie 0, particle 0, center in cell
-	utAssert( fabs( vel[0]-160 ) < pow(10,-13), "Centered interpolation failed, x-component");
-	utAssert( fabs( vel[1]-161 ) < pow(10,-13), "Centered interpolation failed, y-component");
-	utAssert( fabs( vel[2]-162 ) < pow(10,-13), "Centered interpolation failed, z-component");
+	utAssert( fabs( vel[0]-160 ) < pow(10,-13), 
+		"Centered interpolation failed, x-component");
+	utAssert( fabs( vel[1]-161 ) < pow(10,-13), 
+		"Centered interpolation failed, y-component");
+	utAssert( fabs( vel[2]-162 ) < pow(10,-13), 
+		"Centered interpolation failed, z-component");
 
 	// Specie 0, particle 1, non-centered
-	utAssert( fabs( vel[3]-121.3 ) < pow(10,-13), "Non-centered interpolation failed");
+	utAssert( fabs( vel[3]-121.3 ) < pow(10,-13),
+		"Non-centered interpolation failed");
 
 	return 0;
 }
@@ -165,36 +169,64 @@ static int testPuDistr3D1(){
 
 	puDistr3D1(pop,rho);
 
-	utAssert( fabs( val[0] -norm*0.125 ) < pow(10,-13), "Distribution of one centered specie 0 particle failed");
-	utAssert( fabs( val[1] -norm*0.125 ) < pow(10,-13), "Distribution of one centered specie 0 particle failed");
-	utAssert( fabs( val[5] -norm*0.125 ) < pow(10,-13), "Distribution of one centered specie 0 particle failed");
-	utAssert( fabs( val[6] -norm*0.125 ) < pow(10,-13), "Distribution of one centered specie 0 particle failed");
-	utAssert( fabs( val[20]-norm*0.125 ) < pow(10,-13), "Distribution of one centered specie 0 particle failed");
-	utAssert( fabs( val[21]-norm*0.125 ) < pow(10,-13), "Distribution of one centered specie 0 particle failed");
-	utAssert( fabs( val[25]-norm*0.125 ) < pow(10,-13), "Distribution of one centered specie 0 particle failed");
-	utAssert( fabs( val[26]-norm*0.125 ) < pow(10,-13), "Distribution of one centered specie 0 particle failed");
+	utAssert( fabs( val[0] -norm*0.125 ) < pow(10,-13), 
+		"Distribution of one centered specie 0 particle failed");
+	utAssert( fabs( val[1] -norm*0.125 ) < pow(10,-13), 
+		"Distribution of one centered specie 0 particle failed");
+	utAssert( fabs( val[5] -norm*0.125 ) < pow(10,-13), 
+		"Distribution of one centered specie 0 particle failed");
+	utAssert( fabs( val[6] -norm*0.125 ) < pow(10,-13), 
+		"Distribution of one centered specie 0 particle failed");
+	utAssert( fabs( val[20]-norm*0.125 ) < pow(10,-13), 
+		"Distribution of one centered specie 0 particle failed");
+	utAssert( fabs( val[21]-norm*0.125 ) < pow(10,-13), 
+		"Distribution of one centered specie 0 particle failed");
+	utAssert( fabs( val[25]-norm*0.125 ) < pow(10,-13), 
+		"Distribution of one centered specie 0 particle failed");
+	utAssert( fabs( val[26]-norm*0.125 ) < pow(10,-13), 
+		"Distribution of one centered specie 0 particle failed");
 
-	utAssert( fabs( val[2] -norm*0.336 ) < pow(10,-13), "Distribution of one non-centered specie 0 particle failed");
-	utAssert( fabs( val[3] -norm*0.084 ) < pow(10,-13), "Distribution of one non-centered specie 0 particle failed");
-	utAssert( fabs( val[7] -norm*0.144 ) < pow(10,-13), "Distribution of one non-centered specie 0 particle failed");
-	utAssert( fabs( val[8] -norm*0.036 ) < pow(10,-13), "Distribution of one non-centered specie 0 particle failed");
-	utAssert( fabs( val[22]-norm*0.224 ) < pow(10,-13), "Distribution of one non-centered specie 0 particle failed");
-	utAssert( fabs( val[23]-norm*0.056 ) < pow(10,-13), "Distribution of one non-centered specie 0 particle failed");
-	utAssert( fabs( val[27]-norm*0.096 ) < pow(10,-13), "Distribution of one non-centered specie 0 particle failed");
-	utAssert( fabs( val[28]-norm*0.024 ) < pow(10,-13), "Distribution of one non-centered specie 0 particle failed");
+	utAssert( fabs( val[2] -norm*0.336 ) < pow(10,-13), 
+		"Distribution of one non-centered specie 0 particle failed");
+	utAssert( fabs( val[3] -norm*0.084 ) < pow(10,-13), 
+		"Distribution of one non-centered specie 0 particle failed");
+	utAssert( fabs( val[7] -norm*0.144 ) < pow(10,-13), 
+		"Distribution of one non-centered specie 0 particle failed");
+	utAssert( fabs( val[8] -norm*0.036 ) < pow(10,-13), 
+		"Distribution of one non-centered specie 0 particle failed");
+	utAssert( fabs( val[22]-norm*0.224 ) < pow(10,-13), 
+		"Distribution of one non-centered specie 0 particle failed");
+	utAssert( fabs( val[23]-norm*0.056 ) < pow(10,-13), 
+		"Distribution of one non-centered specie 0 particle failed");
+	utAssert( fabs( val[27]-norm*0.096 ) < pow(10,-13), 
+		"Distribution of one non-centered specie 0 particle failed");
+	utAssert( fabs( val[28]-norm*0.024 ) < pow(10,-13), 
+		"Distribution of one non-centered specie 0 particle failed");
 
-	utAssert( fabs( val[10]-norm*0.125 ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[15]-norm*0.125 ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[30]-norm*0.125 ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[35]-norm*0.125 ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[11]-norm*0.325 ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[16]-norm*0.325 ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[31]-norm*0.325 ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[36]-norm*0.325 ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[12]-norm*0.05  ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[17]-norm*0.05  ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[32]-norm*0.05  ) < pow(10,-13), "Distribution of two specie 0 particles failed");
-	utAssert( fabs( val[37]-norm*0.05  ) < pow(10,-13), "Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[10]-norm*0.125 ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[15]-norm*0.125 ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[30]-norm*0.125 ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[35]-norm*0.125 ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[11]-norm*0.325 ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[16]-norm*0.325 ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[31]-norm*0.325 ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[36]-norm*0.325 ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[12]-norm*0.05  ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[17]-norm*0.05  ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[32]-norm*0.05  ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
+	utAssert( fabs( val[37]-norm*0.05  ) < pow(10,-13), 
+		"Distribution of two specie 0 particles failed");
 
 	return 0;
 
@@ -236,14 +268,22 @@ static int testPuDistr3D1renorm(){
 
 	puDistr3D1(pop,rho);
 
-	utAssert( fabs( val[0] +norm*0.08 ) < pow(10,-13), "Distribution of multiple species failed 1");
-	utAssert( fabs( val[20]+norm*0.08 ) < pow(10,-13), "Distribution of multiple species failed 2");
-	utAssert( fabs( val[1] -norm*0.28 ) < pow(10,-13), "Distribution of multiple species failed 3");
-	utAssert( fabs( val[21]-norm*0.28 ) < pow(10,-13), "Distribution of multiple species failed 4");
-	utAssert( fabs( val[5] -norm*0.58 ) < pow(10,-13), "Distribution of multiple species failed 5");
-	utAssert( fabs( val[25]-norm*0.58 ) < pow(10,-13), "Distribution of multiple species failed 6");
-	utAssert( fabs( val[6] -norm*0.22 ) < pow(10,-13), "Distribution of multiple species failed 7");
-	utAssert( fabs( val[26]-norm*0.22 ) < pow(10,-13), "Distribution of multiple species failed 8");
+	utAssert( fabs( val[0] +norm*0.08 ) < pow(10,-13), 
+		"Distribution of multiple species failed 1");
+	utAssert( fabs( val[20]+norm*0.08 ) < pow(10,-13), 
+		"Distribution of multiple species failed 2");
+	utAssert( fabs( val[1] -norm*0.28 ) < pow(10,-13), 
+		"Distribution of multiple species failed 3");
+	utAssert( fabs( val[21]-norm*0.28 ) < pow(10,-13), 
+		"Distribution of multiple species failed 4");
+	utAssert( fabs( val[5] -norm*0.58 ) < pow(10,-13), 
+		"Distribution of multiple species failed 5");
+	utAssert( fabs( val[25]-norm*0.58 ) < pow(10,-13), 
+		"Distribution of multiple species failed 6");
+	utAssert( fabs( val[6] -norm*0.22 ) < pow(10,-13), 
+		"Distribution of multiple species failed 7");
+	utAssert( fabs( val[26]-norm*0.22 ) < pow(10,-13), 
+		"Distribution of multiple species failed 8");
 
 	return 0;
 
@@ -448,10 +488,14 @@ static int testExtractEmigrantsXD(){
 		if(p==0) result[0] = 5;		// Results get shuffled a bit due to back-fill
 		if(p==3) result[0] = 8.5;
 		if(p>=6) result[0] = (p/3.0-2)*0.5+1;
-		utAssert(adEq(&pop->pos[p],result,3,tol),"Wrong particles left after extraction");
-		utAssert(adEq(&pop->vel[p],vel,3,tol),"Wrong particles left after extraction");
-		utAssert(adEq(&pop->pos[p+300],result,3,tol),"Wrong particles left after extraction");
-		utAssert(adEq(&pop->vel[p+300],vel,3,tol),"Wrong particles left after extraction");
+		utAssert(adEq(&pop->pos[p],result,3,tol),
+			"Wrong particles left after extraction");
+		utAssert(adEq(&pop->vel[p],vel,3,tol),
+			"Wrong particles left after extraction");
+		utAssert(adEq(&pop->pos[p+300],result,3,tol),
+			"Wrong particles left after extraction");
+		utAssert(adEq(&pop->vel[p+300],vel,3,tol),
+			"Wrong particles left after extraction");
 		result[0] += 0.5;
 	}
 
@@ -486,7 +530,8 @@ static int testExtractEmigrantsXD(){
 
 	puExtractEmigrantsND(pop,mpiInfo);
 
-	utAssert(alEq(nEmigrants,nEmigrantsResult,81),"Wrong count of particles migrated to each domain (ND-method)");
+	utAssert(alEq(nEmigrants,nEmigrantsResult,81),
+		"Wrong count of particles migrated to each domain (ND-method)");
 
 	adSet(result,36,0.0,5.,5.,1.,2.,3.,
 					0.5,5.,5.,1.,2.,3.,
@@ -519,17 +564,22 @@ static int testExtractEmigrantsXD(){
 		}
 	}
 
-	utAssert(alEq(pop->iStop,iStopExpected,3),"Wrong number of particles left after extraction (ND)");
+	utAssert(alEq(pop->iStop,iStopExpected,3),
+		"Wrong number of particles left after extraction (ND)");
 
 	adSet(result,3,1.,5.,5.);
 	for(int p=0;p<17*3;p+=3){
 		if(p==0) result[0] = 5;		// Results get shuffled a bit due to back-fill
 		if(p==3) result[0] = 8.5;
 		if(p>=6) result[0] = (p/3.0-2)*0.5+1;
-		utAssert(adEq(&pop->pos[p],result,3,tol),"Wrong particles left after extraction (ND)");
-		utAssert(adEq(&pop->vel[p],vel,3,tol),"Wrong particles left after extraction (ND)");
-		utAssert(adEq(&pop->pos[p+300],result,3,tol),"Wrong particles left after extraction (ND)");
-		utAssert(adEq(&pop->vel[p+300],vel,3,tol),"Wrong particles left after extraction (ND)");
+		utAssert(adEq(&pop->pos[p],result,3,tol),
+			"Wrong particles left after extraction (ND)");
+		utAssert(adEq(&pop->vel[p],vel,3,tol),
+			"Wrong particles left after extraction (ND)");
+		utAssert(adEq(&pop->pos[p+300],result,3,tol),
+			"Wrong particles left after extraction (ND)");
+		utAssert(adEq(&pop->vel[p+300],vel,3,tol),
+			"Wrong particles left after extraction (ND)");
 		result[0] += 0.5;
 	}
 
@@ -551,14 +601,20 @@ static int testPuRankNeighbor(){
 
 	gCreateNeighborhood(ini,mpiInfo,grid);
 
-	utAssert(puNeighborToRank(mpiInfo,12)==23,"puNeighborToRank malfunctioning (without wrap-around)");
-	utAssert(puNeighborToRank(mpiInfo,2)==15,"puNeighborToRank malfunctioning (with wrap-around)");
+	utAssert(puNeighborToRank(mpiInfo,12)==23,
+		"puNeighborToRank malfunctioning (without wrap-around)");
+	utAssert(puNeighborToRank(mpiInfo,2)==15,
+		"puNeighborToRank malfunctioning (with wrap-around)");
 
-	utAssert(puRankToNeighbor(mpiInfo,23)==12,"puRankToNeighbor malfunctioning (without wrap-around)");
-	utAssert(puRankToNeighbor(mpiInfo,15)==2,"puRankToNeighbor malfunctioning (with wrap-around)");
+	utAssert(puRankToNeighbor(mpiInfo,23)==12,
+		"puRankToNeighbor malfunctioning (without wrap-around)");
+	utAssert(puRankToNeighbor(mpiInfo,15)==2,
+		"puRankToNeighbor malfunctioning (with wrap-around)");
 
-	utAssert(puNeighborToReciprocal(12,3)==14,"puNeighborToReciprocal malfunctioning");
-	utAssert(puNeighborToReciprocal(0,3)==26,"puNeighborToReciprocal malfunctioning");
+	utAssert(puNeighborToReciprocal(12,3)==14,
+		"puNeighborToReciprocal malfunctioning");
+	utAssert(puNeighborToReciprocal(0,3)==26,
+		"puNeighborToReciprocal malfunctioning");
 
 	return 0;
 
