@@ -821,7 +821,7 @@ static void oMode(dictionary *ini){
 	void *solver = solverAlloc(ini, rho, phi, mpiInfo);
 
     PincObject *obj = objoAlloc(ini,mpiInfo,units); // for capMatrix - objects
-//TODO: look into multigrid E,rho,rhoObj
+    //TODO: look into multigrid E,rho,rhoObj
 
 	// Creating a neighbourhood in the rho to handle migrants
 	gCreateNeighborhood(ini, mpiInfo, rho);
@@ -1077,7 +1077,7 @@ static void oMode(dictionary *ini){
 
 	//if(mpiInfo->mpiRank==0) {
     tMsg(t->total, "Time spent: ");
-//}
+    //}
 
 	/*
 	 * FINALIZE PINC VARIABLES
