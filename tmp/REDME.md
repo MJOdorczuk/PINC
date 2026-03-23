@@ -1,0 +1,1 @@
+This directory is just for a temporary analysis of various available methods. Should be removed after finalising implementation of the unified cycle functionality.

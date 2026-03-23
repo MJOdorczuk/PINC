@@ -248,7 +248,7 @@ Grid **mgAllocSubGrids( Grid *grid,
  	long int gl = g + sizeProd[3];
  	long int gll= g - sizeProd[3];
 
-double coeff = 1./6.;
+	double coeff = 1./6.;
  	for(int l = 0; l<trueSize[3]; l+=2){
  		for(int k = 0; k < trueSize[2]; k+=2){
  			for(int j = 0; j < trueSize[1]; j+=2){
@@ -526,7 +526,7 @@ void mgSetBndSlices(const dictionary *ini, Grid *grid,const MpiInfo *mpiInfo,int
 			}
 		}
 	}
-;
+
 	free(velDrift);
 	//free(B);
 	return;
