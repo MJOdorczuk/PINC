@@ -66,7 +66,7 @@ funPtr mccCollissionsOff_set(dictionary *ini);
 
 MccVars *mccAlloc(const dictionary *ini, const Units *units);
 
-
+void mccFreeVars(MccVars *mccVars);
 //
 // /**
 //  * @brief updates Pmax for electrons in the constant collision freq. model
