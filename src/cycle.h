@@ -62,6 +62,6 @@ typedef struct {
 } PINCvariables;
 
 // TODO: Add the description
-void run(dictionary *ini);
+void cycle(dictionary *ini);
 
 #endif

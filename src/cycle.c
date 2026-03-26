@@ -226,7 +226,7 @@ static void setInitialConditions(dictionary *ini, PINCvariables *vars,
  *		PiC Cycle
  ************************************************/
 
-void run(dictionary *ini){
+void cycle(dictionary *ini){
 	// TODO: Implement the cycle.
 
     Methods methods;
