@@ -33,12 +33,11 @@ typedef struct {
 typedef struct {
     bool isCollisional;
     bool isBoris;
-    bool isObject;
-    bool usesAcc;
-    bool usesDistr;
-    bool usesSolver;
-    bool usesExtractEmigrants;
-    bool usesCollide;
+    bool noObject;
+    bool customAcc;
+    bool customDistr;
+    bool customSolver;
+    bool customExtractEmigrants;
 } PINCflags;
 
 typedef struct {
@@ -63,6 +62,6 @@ typedef struct {
 } PINCvariables;
 
 // TODO: Add the description
-void cycle(dictionary *ini);
+void run(dictionary *ini);
 
 #endif

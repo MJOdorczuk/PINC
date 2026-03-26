@@ -26,19 +26,8 @@
  *		Auxiliary functions
  ************************************************/
 
-static void defaultPINCFlags(PINCflags *flags){
-    flags->isCollisional = false;
-    flags->isBoris = false;
-    flags->isObject = true;
-    flags->usesAcc = true;
-    flags->usesDistr = true;
-    flags->usesSolver = true;
-    flags->usesExtractEmigrants = true;
-    flags->usesCollide = true;
-}
-
 static void selectMethods(dictionary *ini, Methods *methods, PINCflags *flags){
-    if(flags->usesAcc) {
+    if(!flags->customAcc) {
         methods->acc = select(ini, "methods:acc",
                                             puAcc3D1_set,
                                             puAcc3D1KE_set,
@@ -50,14 +39,14 @@ static void selectMethods(dictionary *ini, Methods *methods, PINCflags *flags){
                                             puBoris3D1KE_set,
                                             puBoris3D1KETEST_set);
     }
-    if(flags->usesDistr) {
+    if(!flags->customDistr) {
         methods->distr = select(ini, "methods:distr",
                                             puDistr3D1split_set,
                                             puDistr3D1_set,
                                             puDistrND1_set,
                                             puDistrND0_set);
     }
-    if(flags->usesExtractEmigrants) {
+    if(!flags->customExtractEmigrants) {
         methods->extractEmigrants = select(ini,	"methods:migrate",
                                             puExtractEmigrants3D_set,
                                             puExtractEmigrantsND_set,
@@ -73,7 +62,7 @@ static void selectMethods(dictionary *ini, Methods *methods, PINCflags *flags){
     methods->solve = NULL;
     methods->solverAlloc = NULL;
     methods->solverFree = NULL;
-    if(flags->usesSolver) {
+    if(!flags->customSolver) {
         // TODO: does it need to be a part of methods?
         methods->solverInterface = select(ini, "methods:poisson",
                                             mgSolver_set,
@@ -106,7 +95,7 @@ static void selectPINCvariables(dictionary *ini, PINCvariables *vars,
     vars->rho_i = gAlloc(ini, SCALAR, vars->mpiInfo);
     vars->phi = gAlloc(ini, SCALAR, vars->mpiInfo);
     vars->solver = methods->solverAlloc(ini, vars->rho, vars->phi, vars->mpiInfo);
-    if (flags->isObject){
+    if (!flags->noObject){
         vars->rhoObj = gAlloc(ini, SCALAR, vars->mpiInfo);
         vars->obj = objoAlloc(ini, vars->mpiInfo, vars->units);
     }
@@ -137,7 +126,7 @@ static void freePINCvariables(PINCvariables *vars, PINCflags *flags, Methods *me
         gFree(vars->rhoNeutral);
         mccFreeVars(vars->mccVars);
     }
-    if (flags->isObject){
+    if (!flags->noObject){
         oFree(vars->obj);
         gFree(vars->rhoObj);
     }
@@ -198,14 +187,14 @@ static void closeFiles(PINCvariables *vars){
 
 static void setInitialConditions(dictionary *ini, PINCvariables *vars, 
     PINCflags *flags, Methods *methods){
-    if (flags->isObject){
+    if (!flags->noObject){
         oComputeCapacitanceMatrix(vars->obj, ini, vars->mpiInfo);
     }
     if (flags->isCollisional){
         gZero(vars->rhoNeutral);
         gAdd(vars->rhoNeutral, vars->mccVars->nt);
     }
-    if (flags->isObject){
+    if (!flags->noObject){
         gZero(vars->rhoObj);
         oCollectObjectCharge(vars->pop, vars->rhoObj, vars->obj, vars->mpiInfo);
         gZero(vars->rhoObj);
@@ -234,16 +223,15 @@ static void setInitialConditions(dictionary *ini, PINCvariables *vars,
 }
 
 /*************************************************
- *		Cycle
+ *		PiC Cycle
  ************************************************/
 
-void cycle(dictionary *ini){
+void run(dictionary *ini){
 	// TODO: Implement the cycle.
 
     Methods methods;
     // TODO: Should be passed as an argument
-    PINCflags flags;
-    defaultPINCFlags(&flags);
+    PINCflags flags = {0};
     flags.isCollisional = isCollisional(ini);
     // Not present for mgMode, mgModeErrorScaling and sMode
     selectMethods(ini, &methods, &flags);
@@ -259,6 +247,92 @@ void cycle(dictionary *ini){
     // Write initial data
     setInitialConditions(ini, &vars, &flags, &methods);
     // Run the cycle
+    /*
+     * General form of the time loop gathered from the existing modes in tmp/.
+     *
+     * Full charged PIC modes (regular, BorisTestMode, mccMode, oMode,
+     * oCollMode) all follow the same outer structure:
+     *
+     * for (n = 1; n <= nTimeSteps; n++) {
+     *     optional assertions / particle count diagnostics;
+     *     tStart(...);
+     *
+     *     // Advance particle positions
+     *     move particles;
+     *
+     *     // Boundary / migration handling
+     *     optionally purge ghost particles first;
+     *     extract emigrants;
+     *     migrate particles;
+     *     optionally refill ghost particles;
+     *
+     *     // Additional per-mode physics before field solve
+     *     optionally collect object charge into rhoObj;
+     *     optionally collide charged particles with neutrals;
+     *
+     *     // Charge deposition
+     *     distribute particle charge to rho
+     *         (sometimes also rho_e and rho_i);
+     *     halo-add the deposited grids;
+     *     optionally add rhoObj to rho;
+     *
+     *     // Field solve
+     *     solve Poisson once in regular / mcc / BorisTestMode;
+     *     solve twice in object modes:
+     *         first solve(rho -> phi),
+     *         then update object bias / capacitance correction,
+     *         then solve again;
+     *
+     *     // Electric field update
+     *     E = -grad(phi);
+     *     halo-set E;
+     *     optionally apply E boundary conditions;
+     *     optionally add external E;
+     *
+     *     // Velocity update
+     *     non-Boris modes use acc(pop, E);
+     *     Boris modes use acc(pop, E, T, S);
+     *
+     *     tStop(...);
+     *
+     *     // Diagnostics / output
+     *     sum energies;
+     *     compute potential energy;
+     *     write fields / particles / history;
+     *     optionally write object currents, temperatures, probes, etc.;
+     * }
+     *
+     * Main differences between the modes:
+     *
+     * - regular:
+     *   one solve per step, no collisions, no object correction.
+     *
+     * - BorisTestMode:
+     *   same charged PIC structure, but uses Boris rotation and zeroes the
+     *   self-consistent field before adding external E to isolate the Boris
+     *   update.
+     *
+     * - mccMode:
+     *   adds collide(...) and keeps a rhoNeutral / mccVars state, but is
+     *   otherwise still a single-solve charged PIC loop.
+     *
+     * - oMode:
+     *   adds object charge collection, object potential / capacitance updates,
+     *   and therefore a second solve before accelerating particles.
+     *
+     * - oCollMode:
+     *   combines the object-mode corrections with MCC collisions.
+     *
+     * - neutTest:
+     *   not a charged PIC loop. It advances neutral pressure, velocity,
+     *   internal energy, migration and object boundary effects directly, and
+     *   does not do a Poisson solve inside the timestep.
+     *
+     * - sMode, mgMode, mgModeErrorScaling:
+     *   solver drivers / benchmarks rather than full particle time loops.
+     *   sMode performs a standalone spectral solve, while the multigrid modes
+     *   iterate or post-process solver error instead of advancing particles.
+     */
     // Close files
     closeFiles(&vars);
     // Free memory

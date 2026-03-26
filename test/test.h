@@ -168,4 +168,9 @@ void testUnits();
  */
 void testNeutrals();
 
+/**
+ * @brief	Performs all tests in cycle.test.c
+ */
+void testCycle();
+
 #endif // TEST_H

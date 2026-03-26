@@ -24,6 +24,7 @@ int main(int argc, char *argv[]){
 	testSpectral();
 	testUnits();
 	testNeutrals();
+	testCycle();
 	utSummary();
 
 	MPI_Finalize();
